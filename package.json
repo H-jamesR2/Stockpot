@@ -1,0 +1,22 @@
+{
+  "name": "stockpot",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:shared": "npm run build -w @stockpot/shared",
+    "dev:api": "npm run build:shared && npm run dev -w @stockpot/api",
+    "typecheck": "npm run build:shared && npm run typecheck --workspaces --if-present",
+    "test": "npm run build:shared && npm test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "~6.0.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

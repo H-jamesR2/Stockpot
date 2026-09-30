@@ -1,0 +1,117 @@
+name: stockpot
+
+# Local infrastructure only. The API and Angular app run on the host
+# with npm for fast reloads.
+#
+#   docker compose up -d                          Postgres, migrations, Neo4j
+#   docker compose --profile ollama up -d         also Ollama (Linux/Windows)
+#   docker compose --profile seed run --rm seed   load the dev seed
+#
+# On macOS, install Ollama natively instead. Docker on Mac cannot use the
+# Apple GPU, so models run far slower in a container.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-stockpot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stockpot}
+      POSTGRES_DB: ${POSTGRES_DB:-stockpot}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Runs pending migrations on every `up`, then exits.
+  migrate:
+    image: ghcr.io/amacneil/dbmate:2
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-stockpot}:${POSTGRES_PASSWORD:-stockpot}@postgres:5432/${POSTGRES_DB:-stockpot}?sslmode=disable
+      DBMATE_MIGRATIONS_DIR: /db/migrations
+      DBMATE_NO_DUMP_SCHEMA: "true"
+    volumes:
+      - ./apps/api/db:/db:ro
+    command: ["--wait", "up"]
+    restart: "no"
+
+  seed:
+    image: pgvector/pgvector:pg16
+    profiles: ["seed"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-stockpot}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-stockpot}
+      PGDATABASE: ${POSTGRES_DB:-stockpot}
+    volumes:
+      - ./apps/api/db/seeds:/seeds:ro
+    entrypoint: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/seeds/dev_seed.sql"]
+    restart: "no"
+
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-stockpot-dev-password}
+    ports:
+      - "${NEO4J_HTTP_PORT:-7474}:7474"   # browser UI
+      - "${NEO4J_BOLT_PORT:-7687}:7687"   # driver connections
+    volumes:
+      - neo4jdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p '${NEO4J_PASSWORD:-stockpot-dev-password}' 'RETURN 1' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # NVIDIA GPU on Linux or WSL2: uncomment and install the NVIDIA Container Toolkit.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # Pulls the embedding and chat models once, then exits.
+  ollama-pull:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: ollama:11434
+    volumes:
+      - ollama:/root/.ollama
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - ollama pull ${OLLAMA_EMBED_MODEL:-nomic-embed-text} && ollama pull ${OLLAMA_CHAT_MODEL:-llama3.1:8b}
+    restart: "no"
+
+volumes:
+  pgdata:
+  neo4jdata:
+  ollama:
