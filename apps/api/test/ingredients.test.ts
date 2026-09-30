@@ -45,7 +45,12 @@ describe('ingredients', () => {
 
   it('filters the list by category and 404s unknown slugs', async () => {
     const list = await ctx.app.inject({ method: 'GET', url: '/ingredients?category=dairy' });
-    expect(list.json().items.map((i: { slug: string }) => i.slug).sort()).toEqual(['unsalted-butter', 'whole-milk']);
+    expect(
+      list
+        .json()
+        .items.map((i: { slug: string }) => i.slug)
+        .sort(),
+    ).toEqual(['unsalted-butter', 'whole-milk']);
 
     const missing = await ctx.app.inject({ method: 'GET', url: '/ingredients/unobtainium' });
     expect(missing.statusCode).toBe(404);

@@ -15,9 +15,21 @@ type GeneratedUuid = ColumnType<string, string | undefined, never>;
 export type UnitKind = 'mass' | 'volume' | 'count';
 export type PantryLocation = 'fridge' | 'freezer' | 'pantry';
 export type IngredientCategory =
-  | 'produce' | 'herb' | 'spice' | 'protein' | 'seafood' | 'dairy' | 'egg'
-  | 'grain' | 'legume' | 'nut_seed' | 'baking' | 'oil_fat' | 'condiment'
-  | 'beverage' | 'other';
+  | 'produce'
+  | 'herb'
+  | 'spice'
+  | 'protein'
+  | 'seafood'
+  | 'dairy'
+  | 'egg'
+  | 'grain'
+  | 'legume'
+  | 'nut_seed'
+  | 'baking'
+  | 'oil_fat'
+  | 'condiment'
+  | 'beverage'
+  | 'other';
 
 export interface UsersTable {
   id: GeneratedUuid;

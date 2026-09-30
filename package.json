@@ -10,11 +10,19 @@
     "build:shared": "npm run build -w @stockpot/shared",
     "dev:api": "npm run build:shared && npm run dev -w @stockpot/api",
     "typecheck": "npm run build:shared && npm run typecheck --workspaces --if-present",
-    "test": "npm run build:shared && npm test --workspaces --if-present"
+    "test": "npm run build:shared && npm test --workspaces --if-present",
+    "lint": "npm run build:shared && eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.0.0",
-    "typescript": "~6.0.0"
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.0",
+    "typescript-eslint": "^8.71.0"
   },
   "engines": {
     "node": ">=22"

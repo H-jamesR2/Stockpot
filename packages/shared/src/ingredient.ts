@@ -2,9 +2,21 @@ import { z } from 'zod';
 import { Pagination, Slug, UnitCode, Uuid } from './common.js';
 
 export const IngredientCategory = z.enum([
-  'produce', 'herb', 'spice', 'protein', 'seafood', 'dairy', 'egg',
-  'grain', 'legume', 'nut_seed', 'baking', 'oil_fat', 'condiment',
-  'beverage', 'other',
+  'produce',
+  'herb',
+  'spice',
+  'protein',
+  'seafood',
+  'dairy',
+  'egg',
+  'grain',
+  'legume',
+  'nut_seed',
+  'baking',
+  'oil_fat',
+  'condiment',
+  'beverage',
+  'other',
 ]);
 export type IngredientCategory = z.infer<typeof IngredientCategory>;
 
