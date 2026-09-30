@@ -9,10 +9,12 @@ Requires Node 22+ and Docker.
 ```bash
 cp .env.example .env
 npm install
-docker compose up -d                          # Postgres (runs migrations), Neo4j
+docker compose up -d                          # Postgres (runs migrations)
 docker compose --profile seed run --rm seed   # 200-ingredient dev catalog
 npm run dev:api                               # http://localhost:3000, docs at /docs
 ```
+
+Neo4j: `docker compose --profile graph up -d`. It is off by default until the graph phase.
 
 Ollama: `docker compose --profile ollama up -d` on Linux or Windows, or install it natively on macOS.
 
