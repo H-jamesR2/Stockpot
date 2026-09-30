@@ -60,9 +60,10 @@ export class RecipeRepository {
     if (query.q) q = q.where('r.title', 'ilike', `%${escapeLike(query.q)}%`);
     if (query.usesIngredient) {
       const slug = query.usesIngredient;
-      q = q.where(({ exists, selectFrom }) =>
-        exists(
-          selectFrom('recipe_ingredients as ri')
+      q = q.where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom('recipe_ingredients as ri')
             .innerJoin('ingredients as i', 'i.id', 'ri.ingredient_id')
             .select(sql`1`.as('one'))
             .whereRef('ri.recipe_id', '=', 'r.id')
@@ -164,12 +165,14 @@ export class RecipeRepository {
    * Quantity-aware matching comes once unit conversion lands in the API.
    */
   async pantryMatches(userId: string, query: PantryMatchesQuery): Promise<PantryMatch[]> {
-    const result = await sql<RecipeSummaryRow & {
-      required_count: number;
-      have_count: number;
-      expiring_count: number;
-      missing: string[];
-    }>`
+    const result = await sql<
+      RecipeSummaryRow & {
+        required_count: number;
+        have_count: number;
+        expiring_count: number;
+        missing: string[];
+      }
+    >`
       with have as (
         select ingredient_id, min(expires_at) as expires_at
         from pantry_items
@@ -225,4 +228,3 @@ export class RecipeRepository {
 function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
-

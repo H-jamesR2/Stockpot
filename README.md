@@ -27,27 +27,27 @@ Postgres instead, set `TEST_DATABASE_URL` (that database is wiped on every run).
 
 ## Layout
 
-| Path | What |
-| --- | --- |
-| `packages/shared` | Zod schemas shared by the API and the Angular app |
-| `apps/api` | Fastify API. `src/modules/*` holds routes and repositories per feature |
-| `apps/api/db/migrations` | dbmate SQL migrations |
-| `apps/api/db/seeds` | Dev seed data |
+| Path                     | What                                                                   |
+| ------------------------ | ---------------------------------------------------------------------- |
+| `packages/shared`        | Zod schemas shared by the API and the Angular app                      |
+| `apps/api`               | Fastify API. `src/modules/*` holds routes and repositories per feature |
+| `apps/api/db/migrations` | dbmate SQL migrations                                                  |
+| `apps/api/db/seeds`      | Dev seed data                                                          |
 
 ## API
 
-| Method | Path | Notes |
-| --- | --- | --- |
-| GET | `/health` | Checks the database |
-| GET | `/ingredients` | Filter by `category` |
-| GET | `/ingredients/resolve?q=` | Fuzzy match free text, flags ambiguous terms |
-| GET | `/ingredients/:slug` | |
-| GET POST | `/pantry` | Auth. Filter by `location`, `expiringWithinDays`. Unit and expiry default from the ingredient |
-| GET PATCH DELETE | `/pantry/:id` | Auth |
-| GET | `/recipes` | Filter by `q`, `cuisine`, `method`, `usesIngredient` |
-| GET | `/recipes/pantry-matches` | Auth. Ranked by expiring items used, then pantry coverage |
-| GET | `/recipes/review-queue` | Ingredient lines that failed normalization |
-| GET | `/recipes/:slug` | Detail with ingredients and steps |
+| Method           | Path                      | Notes                                                                                         |
+| ---------------- | ------------------------- | --------------------------------------------------------------------------------------------- |
+| GET              | `/health`                 | Checks the database                                                                           |
+| GET              | `/ingredients`            | Filter by `category`                                                                          |
+| GET              | `/ingredients/resolve?q=` | Fuzzy match free text, flags ambiguous terms                                                  |
+| GET              | `/ingredients/:slug`      |                                                                                               |
+| GET POST         | `/pantry`                 | Auth. Filter by `location`, `expiringWithinDays`. Unit and expiry default from the ingredient |
+| GET PATCH DELETE | `/pantry/:id`             | Auth                                                                                          |
+| GET              | `/recipes`                | Filter by `q`, `cuisine`, `method`, `usesIngredient`                                          |
+| GET              | `/recipes/pantry-matches` | Auth. Ranked by expiring items used, then pantry coverage                                     |
+| GET              | `/recipes/review-queue`   | Ingredient lines that failed normalization                                                    |
+| GET              | `/recipes/:slug`          | Detail with ingredients and steps                                                             |
 
 Auth is a local dev provider that treats every request as `DEV_USER_EMAIL`
 (or the `x-dev-user-email` header). Cognito replaces it in the AWS phase.

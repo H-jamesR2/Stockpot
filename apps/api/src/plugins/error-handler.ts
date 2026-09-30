@@ -26,11 +26,19 @@ export function registerErrorHandler(app: FastifyInstance): void {
 
     switch (pgErrorCode(err)) {
       case PG_FOREIGN_KEY_VIOLATION:
-        return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: 'References an unknown value (check unit or ingredient)' });
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: 'References an unknown value (check unit or ingredient)',
+        });
       case PG_UNIQUE_VIOLATION:
         return reply.status(409).send({ statusCode: 409, error: 'Conflict', message: 'That record already exists' });
       case PG_CHECK_VIOLATION:
-        return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: 'Values violate a data rule (for example, expiry before purchase)' });
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: 'Values violate a data rule (for example, expiry before purchase)',
+        });
       case PG_INVALID_TEXT_REPRESENTATION:
         return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: 'Malformed value' });
     }
