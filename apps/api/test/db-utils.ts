@@ -34,7 +34,7 @@ export async function resetAndMigrate(connectionString: string): Promise<void> {
   }
 }
 
-export async function runSeed(connectionString: string, file = 'dev_seed.sql'): Promise<void> {
+export async function runSeed(connectionString: string, file = 'test_seed.sql'): Promise<void> {
   const client = new pg.Client({ connectionString });
   await client.connect();
   try {
