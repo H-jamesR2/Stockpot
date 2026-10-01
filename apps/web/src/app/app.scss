@@ -1,3 +1,15 @@
+@use '@angular/material' as mat;
+
+// Material 3 toolbars default to the page surface color, which makes them invisible.
+mat-toolbar {
+  @include mat.toolbar-overrides(
+    (
+      container-background-color: var(--mat-sys-primary-container),
+      container-text-color: var(--mat-sys-on-primary-container),
+    )
+  );
+}
+
 .brand {
   font-weight: 600;
 }
