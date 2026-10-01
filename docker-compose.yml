@@ -3,7 +3,8 @@ name: stockpot
 # Local infrastructure only. The API and Angular app run on the host
 # with npm for fast reloads.
 #
-#   docker compose up -d                          Postgres, migrations, Neo4j
+#   docker compose up -d                          Postgres and migrations
+#   docker compose --profile graph up -d          also Neo4j (not used until the graph phase)
 #   docker compose --profile ollama up -d         also Ollama (Linux/Windows)
 #   docker compose --profile seed run --rm seed   load the dev seed
 #
@@ -58,8 +59,10 @@ services:
     entrypoint: ['psql', '-v', 'ON_ERROR_STOP=1', '-f', '/seeds/dev_seed.sql']
     restart: 'no'
 
+  # Behind a profile because it idles at about 500 MB of RAM and nothing uses it yet.
   neo4j:
     image: neo4j:5-community
+    profiles: ['graph']
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-stockpot-dev-password}
     ports:
