@@ -5,3 +5,5 @@ coverage/
 *.log
 CLAUDE.md
 .claude/
+.angular/
+out-tsc/
