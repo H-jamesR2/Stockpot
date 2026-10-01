@@ -10,7 +10,7 @@ Requires Node 22+ and Docker.
 cp .env.example .env
 npm install
 docker compose up -d                          # Postgres (runs migrations), Neo4j
-docker compose --profile seed run --rm seed   # dev seed data
+docker compose --profile seed run --rm seed   # 200-ingredient dev catalog
 npm run dev:api                               # http://localhost:3000, docs at /docs
 ```
 
@@ -32,7 +32,7 @@ Postgres instead, set `TEST_DATABASE_URL` (that database is wiped on every run).
 | `packages/shared`        | Zod schemas shared by the API and the Angular app                      |
 | `apps/api`               | Fastify API. `src/modules/*` holds routes and repositories per feature |
 | `apps/api/db/migrations` | dbmate SQL migrations                                                  |
-| `apps/api/db/seeds`      | Dev seed data                                                          |
+| `apps/api/db/seeds`      | Dev catalog (200 ingredients, USDA-backed) and the small test fixture  |
 
 ## API
 
