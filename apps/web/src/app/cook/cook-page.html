@@ -1,0 +1,89 @@
+<h1>What can I cook</h1>
+<p class="intro">
+  Recipes ranked by how many of your soon-to-expire pantry items they use, then by how much of the recipe you already
+  have.
+</p>
+
+<div class="controls">
+  <span id="window-label" class="label">Expiring within</span>
+  <mat-button-toggle-group
+    aria-labelledby="window-label"
+    hideSingleSelectionIndicator
+    [value]="window()"
+    (change)="setWindow($event.value)"
+  >
+    @for (days of windows; track days) {
+      <mat-button-toggle [value]="days">{{ windowLabel(days) }}</mat-button-toggle>
+    }
+  </mat-button-toggle-group>
+
+  <mat-slide-toggle [checked]="closeOnly()" (change)="setCloseOnly($event.checked)">
+    Hide recipes I'm far from making
+  </mat-slide-toggle>
+</div>
+
+@if (matches.isLoading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Finding recipes" />
+}
+
+@if (matches.error()) {
+  <p class="message" role="alert">
+    Could not load suggestions.
+    <button mat-button type="button" (click)="matches.reload()">Try again</button>
+  </p>
+} @else if (matches.hasValue() && items().length === 0) {
+  <p class="message">
+    @if (closeOnly()) {
+      No recipe is at least half covered by your pantry.
+      <button mat-button type="button" (click)="setCloseOnly(false)">Show all</button>
+    } @else {
+      No suggestions yet. <a routerLink="/pantry">Add what you have</a> to your pantry.
+    }
+  </p>
+}
+
+<ul class="grid">
+  @for (match of items(); track match.recipe.id) {
+    <li>
+      <mat-card appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>
+            <a [routerLink]="['/recipes', match.recipe.slug]">{{ match.recipe.title }}</a>
+          </mat-card-title>
+          <mat-card-subtitle>You have {{ match.haveCount }} of {{ match.requiredCount }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-progress-bar
+            mode="determinate"
+            [value]="match.coverage * 100"
+            [attr.aria-label]="'Have ' + match.haveCount + ' of ' + match.requiredCount + ' ingredients'"
+          />
+          @if (match.expiring.length > 0) {
+            <p class="expiring-heading">
+              Uses {{ match.expiring.length }} {{ match.expiring.length === 1 ? 'item' : 'items' }} expiring soon:
+            </p>
+            <ul class="expiring">
+              @for (item of match.expiring; track item.name) {
+                @let label = expiryLabel(item.daysUntilExpiry);
+                <!-- Interpolated spaces survive Angular's whitespace stripping, so the text reads as words. -->
+                <li>
+                  <span class="name">{{ item.name }}</span
+                  >{{ ' ' }}<span [class]="'expiry ' + label.tone">{{ label.text }}</span
+                  >{{ ' ' }}<span class="date">({{ item.expiresAt }})</span>
+                </li>
+              }
+            </ul>
+          }
+          @if (match.missing.length > 0) {
+            <p class="missing"><span class="label">Missing:</span> {{ match.missing.join(', ') }}</p>
+          } @else {
+            <p class="missing">You have everything.</p>
+          }
+          @if (match.assumedStaples.length > 0) {
+            <p class="assumed">Assumes {{ match.assumedStaples.join(', ') }}</p>
+          }
+        </mat-card-content>
+      </mat-card>
+    </li>
+  }
+</ul>

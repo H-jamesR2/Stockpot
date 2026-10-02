@@ -1,4 +1,5 @@
 import type {
+  ExpiringIngredient,
   ListRecipesQuery,
   PantryMatch,
   PantryMatchesQuery,
@@ -173,6 +174,7 @@ export class RecipeRepository {
         missing: string[];
         assumed_staples: string[];
         coverage: number;
+        expiring: ExpiringIngredient[];
       }
     >`
       with have as (
@@ -189,6 +191,7 @@ export class RecipeRepository {
           -- Staples are assumed, and unmeasured lines ("salt to taste") are never required.
           ri.quantity is not null and not coalesce(i.is_staple, false) as required,
           h.ingredient_id is not null as have,
+          h.expires_at,
           coalesce(h.expires_at <= current_date + ${query.expiringWithinDays}::int, false) as expiring
         from recipe_ingredients ri
         left join ingredients i on i.id = ri.ingredient_id
@@ -202,7 +205,14 @@ export class RecipeRepository {
           count(*) filter (where required and have)::int as have_count,
           count(*) filter (where required and expiring)::int as expiring_count,
           coalesce(array_agg(name order by name) filter (where required and not have), '{}') as missing,
-          coalesce(array_agg(distinct name order by name) filter (where staple), '{}') as assumed_staples
+          coalesce(array_agg(distinct name order by name) filter (where staple), '{}') as assumed_staples,
+          coalesce(
+            json_agg(
+              json_build_object('name', name, 'expiresAt', expires_at, 'daysUntilExpiry', expires_at - current_date)
+              order by expires_at, name
+            ) filter (where required and expiring),
+            '[]'
+          ) as expiring
         from lines
         group by recipe_id
       ),
@@ -212,7 +222,7 @@ export class RecipeRepository {
       )
       select
         r.id, r.slug, r.title, r.description, r.servings, r.prep_min, r.cook_min, r.cuisine, r.methods,
-        s.required_count, s.have_count, s.expiring_count, s.missing, s.assumed_staples, s.coverage
+        s.required_count, s.have_count, s.expiring_count, s.missing, s.assumed_staples, s.coverage, s.expiring
       from ranked s
       join recipes r on r.id = s.recipe_id
       where s.coverage >= ${query.minCoverage}
@@ -231,6 +241,8 @@ export class RecipeRepository {
       expiringCount: row.expiring_count,
       missing: row.missing,
       assumedStaples: row.assumed_staples,
+      // A recipe can list the same ingredient twice. Keep the first, which expires soonest.
+      expiring: row.expiring.filter((item, index, all) => all.findIndex((other) => other.name === item.name) === index),
     }));
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { useTestApp } from './helpers.js';
+import { dbDatePlus, useTestApp } from './helpers.js';
 
 describe('recipes', () => {
   const ctx = useTestApp();
@@ -44,6 +44,16 @@ describe('recipes', () => {
     expect(second.recipe.slug).toBe('red-wine-braised-chuck');
     expect(second).toMatchObject({ requiredCount: 5, haveCount: 2, expiringCount: 0 });
     expect(second.missing).toEqual(['1 cup dry red wine', 'carrot', 'yellow onion']);
+  });
+
+  it('names the expiring ingredients each match uses, soonest first', async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: '/recipes/pantry-matches' });
+    const [friedRice, chuck] = res.json().items;
+
+    expect(friedRice.expiring).toEqual([
+      { name: 'scallion', expiresAt: await dbDatePlus(ctx.db, 2), daysUntilExpiry: 2 },
+    ]);
+    expect(chuck.expiring).toEqual([]);
   });
 
   it('assumes staple ingredients instead of counting them as missing', async () => {
