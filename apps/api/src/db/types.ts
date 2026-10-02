@@ -55,6 +55,7 @@ export interface IngredientsTable {
   default_unit: string;
   shelf_life_days: number | null;
   fdc_id: number | null;
+  is_staple: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }

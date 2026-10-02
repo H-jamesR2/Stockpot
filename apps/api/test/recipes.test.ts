@@ -46,6 +46,23 @@ describe('recipes', () => {
     expect(second.missing).toEqual(['1 cup dry red wine', 'carrot', 'yellow onion']);
   });
 
+  it('assumes staple ingredients instead of counting them as missing', async () => {
+    await ctx.db.updateTable('ingredients').set({ is_staple: true }).where('slug', '=', 'ginger').execute();
+
+    const res = await ctx.app.inject({ method: 'GET', url: '/recipes/pantry-matches' });
+    const friedRice = res
+      .json()
+      .items.find((m: { recipe: { slug: string } }) => m.recipe.slug === 'scallion-ginger-fried-rice');
+
+    expect(friedRice).toMatchObject({
+      requiredCount: 5,
+      haveCount: 5,
+      coverage: 1,
+      missing: [],
+      assumedStaples: ['ginger'],
+    });
+  });
+
   it('respects minCoverage', async () => {
     const res = await ctx.app.inject({ method: 'GET', url: '/recipes/pantry-matches?minCoverage=0.5' });
     expect(res.json().items.map((m: { recipe: { slug: string } }) => m.recipe.slug)).toEqual([

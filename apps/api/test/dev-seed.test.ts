@@ -54,6 +54,15 @@ describe('dev catalog seed', () => {
     expect(rows.filter((r) => r.lines === 0 || r.steps === 0)).toEqual([]);
   });
 
+  it('assumes salt, pepper, oil, and water instead of listing them as missing', async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: '/recipes/pantry-matches?limit=50' });
+    const items: { missing: string[]; assumedStaples: string[] }[] = res.json().items;
+    const staples = ['water', 'kosher salt', 'black pepper', 'neutral oil', 'extra-virgin olive oil'];
+
+    expect(items.flatMap((m) => m.missing).filter((name) => staples.includes(name))).toEqual([]);
+    expect(new Set(items.flatMap((m) => m.assumedStaples))).toEqual(new Set(staples));
+  });
+
   it('includes braises to filter by', async () => {
     const res = await ctx.app.inject({ method: 'GET', url: '/recipes?method=braise' });
     const slugs = res.json().items.map((r: { slug: string }) => r.slug);
