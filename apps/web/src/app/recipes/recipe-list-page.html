@@ -1,0 +1,97 @@
+<h1>Recipes</h1>
+
+<form class="search" role="search" (submit)="$event.preventDefault(); search(searchInput.value)">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Search by title</mat-label>
+    <input #searchInput matInput type="search" name="q" [value]="q() ?? ''" />
+  </mat-form-field>
+  <button mat-flat-button type="submit">Search</button>
+</form>
+
+@if (activeFilters().length > 0 || q()) {
+  <div class="filters" aria-label="Active filters">
+    @if (q()) {
+      <button type="button" class="tag active" (click)="clear('q')" [attr.aria-label]="'Remove search ' + q()">
+        "{{ q() }}" ✕
+      </button>
+    }
+    @for (filter of activeFilters(); track filter.name) {
+      <button
+        type="button"
+        class="tag active"
+        (click)="clear(filter.name)"
+        [attr.aria-label]="'Remove ' + filter.name + ' filter ' + filter.value"
+      >
+        {{ filter.name }}: {{ filter.value }} ✕
+      </button>
+    }
+    <button mat-button type="button" (click)="clearAll()">Clear all</button>
+  </div>
+}
+
+@if (recipes.isLoading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading recipes" />
+}
+
+@if (recipes.error()) {
+  <p class="message" role="alert">
+    Could not load recipes.
+    <button mat-button type="button" (click)="recipes.reload()">Try again</button>
+  </p>
+} @else if (recipes.hasValue() && items().length === 0) {
+  <p class="message">No recipes match these filters.</p>
+}
+
+<ul class="grid">
+  @for (recipe of items(); track recipe.id) {
+    <li>
+      <mat-card appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>
+            <a [routerLink]="[recipe.slug]">{{ recipe.title }}</a>
+          </mat-card-title>
+          <mat-card-subtitle>
+            {{ recipe.servings }} servings
+            @if (formatMinutes(recipe.totalMin); as total) {
+              · {{ total }}
+            }
+          </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (recipe.description) {
+            <p>{{ recipe.description }}</p>
+          }
+          <div class="tags">
+            @if (recipe.cuisine) {
+              <a
+                class="tag"
+                routerLink="."
+                [queryParams]="{ cuisine: recipe.cuisine, offset: null }"
+                queryParamsHandling="merge"
+              >
+                {{ recipe.cuisine }}
+              </a>
+            }
+            @for (method of recipe.methods; track method) {
+              <a
+                class="tag"
+                routerLink="."
+                [queryParams]="{ method: method, offset: null }"
+                queryParamsHandling="merge"
+              >
+                {{ method }}
+              </a>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </li>
+  }
+</ul>
+
+@if (pageOffset() > 0 || hasNextPage()) {
+  <nav class="pager" aria-label="Pages">
+    <button mat-button type="button" [disabled]="pageOffset() === 0" (click)="page(-1)">Previous</button>
+    <button mat-button type="button" [disabled]="!hasNextPage()" (click)="page(1)">Next</button>
+  </nav>
+}

@@ -1,0 +1,94 @@
+<a mat-button routerLink="/recipes">← All recipes</a>
+
+@if (recipe.isLoading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading recipe" />
+}
+
+@if (notFound()) {
+  <p class="message" role="alert">That recipe does not exist.</p>
+} @else if (recipe.error()) {
+  <p class="message" role="alert">
+    Could not load this recipe.
+    <button mat-button type="button" (click)="recipe.reload()">Try again</button>
+  </p>
+}
+
+@if (recipe.hasValue()) {
+  @let r = recipe.value();
+  <article>
+    <h1>{{ r.title }}</h1>
+    @if (r.description) {
+      <p class="description">{{ r.description }}</p>
+    }
+
+    <dl class="facts">
+      <div>
+        <dt>Serves</dt>
+        <dd>{{ r.servings }}</dd>
+      </div>
+      @if (formatMinutes(r.prepMin); as prep) {
+        <div>
+          <dt>Prep</dt>
+          <dd>{{ prep }}</dd>
+        </div>
+      }
+      @if (formatMinutes(r.cookMin); as cook) {
+        <div>
+          <dt>Cook</dt>
+          <dd>{{ cook }}</dd>
+        </div>
+      }
+      @if (formatMinutes(r.totalMin); as total) {
+        <div>
+          <dt>Total</dt>
+          <dd>{{ total }}</dd>
+        </div>
+      }
+    </dl>
+
+    <div class="tags">
+      @if (r.cuisine) {
+        <a class="tag" routerLink="/recipes" [queryParams]="{ cuisine: r.cuisine }">{{ r.cuisine }}</a>
+      }
+      @for (method of r.methods; track method) {
+        <a class="tag" routerLink="/recipes" [queryParams]="{ method: method }">{{ method }}</a>
+      }
+    </div>
+
+    <div class="columns">
+      <section aria-labelledby="ingredients-heading">
+        <h2 id="ingredients-heading">Ingredients</h2>
+        <ul class="ingredients">
+          @for (line of r.ingredients; track line.position) {
+            <li>
+              {{ line.rawText }}
+              @if (line.isOptional) {
+                <span class="flag">optional</span>
+              }
+              @if (!line.ingredient) {
+                <span class="flag warn" title="Not linked to a known ingredient yet">unmatched</span>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section aria-labelledby="steps-heading">
+        <h2 id="steps-heading">Steps</h2>
+        <ol class="steps">
+          @for (step of r.steps; track step.stepNumber) {
+            <li>{{ step.text }}</li>
+          }
+        </ol>
+      </section>
+    </div>
+
+    @if (r.sourceUrl) {
+      <p class="source">
+        Source: <a [href]="r.sourceUrl" target="_blank" rel="noopener noreferrer">{{ r.source ?? r.sourceUrl }}</a>
+      </p>
+    } @else if (r.source) {
+      <p class="source">Source: {{ r.source }}</p>
+    }
+  </article>
+}
