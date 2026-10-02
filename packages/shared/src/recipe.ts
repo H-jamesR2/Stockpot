@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Pagination, Slug, UnitCode, Uuid } from './common.js';
+import { IsoDate, Pagination, Slug, UnitCode, Uuid } from './common.js';
 import { IngredientRef } from './ingredient.js';
 
 export const RecipeSummary = z.object({
@@ -71,6 +71,14 @@ export const PantryMatchesQuery = z.object({
 });
 export type PantryMatchesQuery = z.infer<typeof PantryMatchesQuery>;
 
+export const ExpiringIngredient = z.object({
+  name: z.string(),
+  expiresAt: IsoDate,
+  /** Negative once expired. */
+  daysUntilExpiry: z.number().int(),
+});
+export type ExpiringIngredient = z.infer<typeof ExpiringIngredient>;
+
 export const PantryMatch = z.object({
   recipe: RecipeSummary,
   requiredCount: z.number().int(),
@@ -79,6 +87,8 @@ export const PantryMatch = z.object({
   coverage: z.number(),
   /** Required ingredients you have that expire soon. */
   expiringCount: z.number().int(),
+  /** The ingredients behind expiringCount, soonest first. */
+  expiring: z.array(ExpiringIngredient),
   missing: z.array(z.string()),
   /** Staple ingredients the recipe uses that were assumed rather than counted, sorted by name. */
   assumedStaples: z.array(z.string()),
