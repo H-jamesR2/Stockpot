@@ -1,0 +1,93 @@
+.search {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  mat-form-field {
+    flex: 1;
+  }
+}
+
+.filters,
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.filters {
+  margin-top: 12px;
+}
+
+.tag {
+  padding: 2px 10px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 999px;
+  background: none;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-large);
+  text-decoration: none;
+  cursor: pointer;
+
+  &.active {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
+}
+
+mat-progress-bar,
+.message {
+  margin-top: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+
+  // The title link stretches over the whole card so the card is one click target.
+  // Tags sit above that overlay so they keep filtering instead of opening the recipe.
+  mat-card {
+    position: relative;
+    height: 100%;
+    transition: background-color 120ms;
+
+    &:hover {
+      background: var(--mat-sys-surface-container-low);
+    }
+
+    &:has(mat-card-title a:focus-visible) {
+      outline: 2px solid var(--mat-sys-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  mat-card-title a {
+    color: inherit;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+
+  .tags {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+}

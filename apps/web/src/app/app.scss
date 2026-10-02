@@ -11,7 +11,17 @@ mat-toolbar {
 }
 
 .brand {
+  margin-right: 24px;
   font-weight: 600;
+}
+
+nav a {
+  color: inherit;
+
+  &.active {
+    text-decoration: underline;
+    text-underline-offset: 6px;
+  }
 }
 
 main {
