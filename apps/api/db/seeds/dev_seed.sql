@@ -235,6 +235,10 @@ INSERT INTO ingredients (slug, canonical_name, category, default_unit, shelf_lif
   ('sirloin-steak',          'sirloin steak',          'protein',   'lb',     4,    NULL),
   ('tilapia-fillet',         'tilapia fillet',         'seafood',   'lb',     2,    NULL);
 
+-- Pantry matching assumes these instead of counting them as required.
+UPDATE ingredients SET is_staple = true
+WHERE slug IN ('water', 'kosher-salt', 'black-pepper', 'neutral-oil', 'extra-virgin-olive-oil');
+
 -- Canonical names are added automatically by trigger. These are the extra aliases.
 -- "pepper" and "coriander" map to two ingredients on purpose, so the resolver flags them.
 INSERT INTO ingredient_aliases (alias, ingredient_id)

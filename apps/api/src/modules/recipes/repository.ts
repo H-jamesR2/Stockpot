@@ -171,6 +171,8 @@ export class RecipeRepository {
         have_count: number;
         expiring_count: number;
         missing: string[];
+        assumed_staples: string[];
+        coverage: number;
       }
     >`
       with have as (
@@ -183,33 +185,40 @@ export class RecipeRepository {
         select
           ri.recipe_id,
           coalesce(i.canonical_name, ri.raw_text) as name,
+          coalesce(i.is_staple, false) as staple,
+          -- Staples are assumed, and unmeasured lines ("salt to taste") are never required.
+          ri.quantity is not null and not coalesce(i.is_staple, false) as required,
           h.ingredient_id is not null as have,
           coalesce(h.expires_at <= current_date + ${query.expiringWithinDays}::int, false) as expiring
         from recipe_ingredients ri
         left join ingredients i on i.id = ri.ingredient_id
         left join have h on h.ingredient_id = ri.ingredient_id
         where not ri.is_optional
-          and ri.quantity is not null
       ),
       scored as (
         select
           recipe_id,
-          count(*)::int as required_count,
-          count(*) filter (where have)::int as have_count,
-          count(*) filter (where expiring)::int as expiring_count,
-          coalesce(array_agg(name order by name) filter (where not have), '{}') as missing
+          count(*) filter (where required)::int as required_count,
+          count(*) filter (where required and have)::int as have_count,
+          count(*) filter (where required and expiring)::int as expiring_count,
+          coalesce(array_agg(name order by name) filter (where required and not have), '{}') as missing,
+          coalesce(array_agg(distinct name order by name) filter (where staple), '{}') as assumed_staples
         from lines
         group by recipe_id
+      ),
+      ranked as (
+        select *, case when required_count = 0 then 1 else have_count::float8 / required_count end as coverage
+        from scored
       )
       select
         r.id, r.slug, r.title, r.description, r.servings, r.prep_min, r.cook_min, r.cuisine, r.methods,
-        s.required_count, s.have_count, s.expiring_count, s.missing
-      from scored s
+        s.required_count, s.have_count, s.expiring_count, s.missing, s.assumed_staples, s.coverage
+      from ranked s
       join recipes r on r.id = s.recipe_id
-      where s.have_count::float8 / s.required_count >= ${query.minCoverage}
+      where s.coverage >= ${query.minCoverage}
       order by
         s.expiring_count desc,
-        s.have_count::float8 / s.required_count desc,
+        s.coverage desc,
         r.title
       limit ${query.limit}
     `.execute(this.db);
@@ -218,9 +227,10 @@ export class RecipeRepository {
       recipe: toSummary(row),
       requiredCount: row.required_count,
       haveCount: row.have_count,
-      coverage: Math.round((row.have_count / row.required_count) * 1000) / 1000,
+      coverage: Math.round(row.coverage * 1000) / 1000,
       expiringCount: row.expiring_count,
       missing: row.missing,
+      assumedStaples: row.assumed_staples,
     }));
   }
 }

@@ -8,7 +8,7 @@ const AMBIGUITY_MARGIN = 0.05;
 
 type IngredientRow = Pick<
   Selectable<IngredientsTable>,
-  'id' | 'slug' | 'canonical_name' | 'category' | 'default_unit' | 'shelf_life_days'
+  'id' | 'slug' | 'canonical_name' | 'category' | 'default_unit' | 'shelf_life_days' | 'is_staple'
 >;
 
 export function toIngredient(row: IngredientRow): Ingredient {
@@ -19,6 +19,7 @@ export function toIngredient(row: IngredientRow): Ingredient {
     category: row.category,
     defaultUnit: row.default_unit,
     shelfLifeDays: row.shelf_life_days,
+    isStaple: row.is_staple,
   };
 }
 
@@ -29,6 +30,7 @@ const ingredientColumns = [
   'i.category',
   'i.default_unit',
   'i.shelf_life_days',
+  'i.is_staple',
 ] as const;
 
 export function normalizeTerm(input: string): string {

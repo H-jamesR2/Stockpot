@@ -7,6 +7,7 @@ export const scallion: Ingredient = {
   category: 'produce',
   defaultUnit: 'each',
   shelfLifeDays: 7,
+  isStaple: false,
 };
 
 export const blackPepper: Ingredient = {
@@ -16,6 +17,7 @@ export const blackPepper: Ingredient = {
   category: 'spice',
   defaultUnit: 'tsp',
   shelfLifeDays: 730,
+  isStaple: true,
 };
 
 export const bellPepper: Ingredient = {
@@ -25,6 +27,7 @@ export const bellPepper: Ingredient = {
   category: 'produce',
   defaultUnit: 'each',
   shelfLifeDays: 10,
+  isStaple: false,
 };
 
 export function match(ingredient: Ingredient, matchedAlias: string, exact = false): IngredientMatch {

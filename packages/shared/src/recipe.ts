@@ -80,6 +80,8 @@ export const PantryMatch = z.object({
   /** Required ingredients you have that expire soon. */
   expiringCount: z.number().int(),
   missing: z.array(z.string()),
+  /** Staple ingredients the recipe uses that were assumed rather than counted, sorted by name. */
+  assumedStaples: z.array(z.string()),
 });
 export type PantryMatch = z.infer<typeof PantryMatch>;
 

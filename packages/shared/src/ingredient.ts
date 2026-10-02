@@ -27,6 +27,8 @@ export const Ingredient = z.object({
   category: IngredientCategory,
   defaultUnit: UnitCode,
   shelfLifeDays: z.number().int().nullable(),
+  /** Basics like salt and oil that pantry matching assumes you have. */
+  isStaple: z.boolean(),
 });
 export type Ingredient = z.infer<typeof Ingredient>;
 
