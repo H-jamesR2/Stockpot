@@ -11,8 +11,12 @@ cp .env.example .env
 npm install
 docker compose up -d                          # Postgres (runs migrations)
 docker compose --profile seed run --rm seed   # 200-ingredient dev catalog
-npm run dev:api                               # http://localhost:3000, docs at /docs
+npm run dev                                   # API on :3000 (docs at /docs), web app on :4200
 ```
+
+`npm run dev:api` and `npm run dev:web` start either one alone. The web dev server proxies `/api` to the API.
+
+On macOS 13 or older, set `NG_BUILD_SASS_EMBEDDED=0` before building the web app. The native Sass compiler needs macOS 14.
 
 Neo4j: `docker compose --profile graph up -d`. It is off by default until the graph phase.
 

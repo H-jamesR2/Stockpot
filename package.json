@@ -13,11 +13,16 @@
     "test": "npm run build:shared && npm test --workspaces --if-present",
     "lint": "npm run build:shared && eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "dev": "npm run build:shared && concurrently --kill-others-on-fail --names api,web --prefix-colors blue,green \"npm run dev -w @stockpot/api\" \"npm start -w @stockpot/web\"",
+    "dev:web": "npm run build:shared && npm start -w @stockpot/web",
+    "build:web": "npm run build:shared && npm run build -w @stockpot/web"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.0.0",
+    "angular-eslint": "^22.5.0",
+    "concurrently": "^10.0.5",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.9",

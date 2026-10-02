@@ -1,12 +1,13 @@
 import js from '@eslint/js';
+import angular from 'angular-eslint';
 import prettier from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/', '**/coverage/', 'apps/api/db/', '.claude/'] },
-  js.configs.recommended,
-  tseslint.configs.recommendedTypeChecked,
+  { ignores: ['**/dist/', '**/coverage/', '**/.angular/', 'apps/api/db/', '.claude/'] },
   {
+    files: ['**/*.ts', '**/*.js', '**/*.mjs'],
+    extends: [js.configs.recommended, tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -31,6 +32,19 @@ export default tseslint.config(
   {
     files: ['**/*.js', '**/*.mjs'],
     extends: [tseslint.configs.disableTypeChecked],
+  },
+  {
+    files: ['apps/web/**/*.ts'],
+    extends: [angular.configs.tsRecommended],
+    processor: angular.processInlineTemplates,
+    rules: {
+      '@angular-eslint/component-selector': ['error', { type: 'element', prefix: 'sp', style: 'kebab-case' }],
+      '@angular-eslint/directive-selector': ['error', { type: 'attribute', prefix: 'sp', style: 'camelCase' }],
+    },
+  },
+  {
+    files: ['apps/web/**/*.html'],
+    extends: [angular.configs.templateRecommended, angular.configs.templateAccessibility],
   },
   prettier,
 );

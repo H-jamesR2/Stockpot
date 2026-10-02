@@ -29,5 +29,7 @@ jobs:
 
       - run: npm run format:check
 
+      - run: npm run build:web
+
       # Testcontainers starts pgvector/pgvector:pg16 through the runner's Docker daemon.
       - run: npm test
