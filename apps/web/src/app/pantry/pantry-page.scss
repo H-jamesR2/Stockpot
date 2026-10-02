@@ -1,0 +1,52 @@
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: center;
+}
+
+mat-progress-bar,
+.message {
+  margin-top: 16px;
+}
+
+table {
+  margin-top: 16px;
+}
+
+.notes,
+.date {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.expiry {
+  font-weight: 500;
+
+  &.expired {
+    color: var(--mat-sys-error);
+  }
+
+  &.soon {
+    color: var(--mat-sys-tertiary);
+  }
+}
+
+.actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

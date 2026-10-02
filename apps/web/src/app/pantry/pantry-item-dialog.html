@@ -1,0 +1,91 @@
+<h2 mat-dialog-title>{{ title }}</h2>
+
+<mat-dialog-content>
+  <form id="pantry-item-form" [formGroup]="form" (ngSubmit)="save()">
+    @if (data.mode === 'add') {
+      <sp-ingredient-picker [(ingredient)]="ingredient" />
+    }
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Quantity</mat-label>
+        <input matInput type="number" min="0" step="any" formControlName="quantity" />
+        @if (form.controls.quantity.invalid) {
+          <mat-error>Enter an amount above zero.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Unit</mat-label>
+        <mat-select formControlName="unit">
+          @for (group of unitGroups(); track group.kind) {
+            <mat-optgroup [label]="group.kind">
+              @for (unit of group.units; track unit.code) {
+                <mat-option [value]="unit.code">{{ unit.name }}</mat-option>
+              }
+            </mat-optgroup>
+          }
+        </mat-select>
+        @if (form.controls.unit.invalid) {
+          <mat-error>Choose a unit.</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Location</mat-label>
+        <mat-select formControlName="location">
+          @for (location of locations; track location) {
+            <mat-option [value]="location">{{ location }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Purchased</mat-label>
+        <input matInput type="date" formControlName="purchasedAt" />
+        @if (data.mode === 'add') {
+          <mat-hint>Leave empty for today.</mat-hint>
+        }
+      </mat-form-field>
+    </div>
+
+    <fieldset>
+      <legend>Expiry</legend>
+      <mat-radio-group formControlName="expiryMode">
+        @if (data.mode === 'add') {
+          <mat-radio-button value="estimate">Estimate from shelf life</mat-radio-button>
+        }
+        <mat-radio-button value="date">Pick a date</mat-radio-button>
+        <mat-radio-button value="none">No expiry</mat-radio-button>
+      </mat-radio-group>
+      @if (expiryMode() === 'estimate' && shelfLifeHint(); as hint) {
+        <p class="hint">{{ hint }}</p>
+      }
+      @if (expiryMode() === 'date') {
+        <mat-form-field appearance="outline">
+          <mat-label>Expires</mat-label>
+          <input matInput type="date" formControlName="expiresAt" />
+          @if (form.controls.expiresAt.invalid) {
+            <mat-error>Pick an expiry date.</mat-error>
+          }
+        </mat-form-field>
+      }
+    </fieldset>
+
+    <mat-form-field appearance="outline" class="notes">
+      <mat-label>Notes</mat-label>
+      <textarea matInput rows="2" formControlName="notes"></textarea>
+    </mat-form-field>
+
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close>Cancel</button>
+  <button mat-flat-button type="submit" form="pantry-item-form" [disabled]="!canSave()">Save</button>
+</mat-dialog-actions>

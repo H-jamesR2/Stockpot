@@ -40,6 +40,8 @@ export default tseslint.config(
     rules: {
       '@angular-eslint/component-selector': ['error', { type: 'element', prefix: 'sp', style: 'kebab-case' }],
       '@angular-eslint/directive-selector': ['error', { type: 'attribute', prefix: 'sp', style: 'camelCase' }],
+      // Angular's Validators are static functions meant to be passed by reference.
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
   {
