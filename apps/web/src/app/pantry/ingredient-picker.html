@@ -1,0 +1,28 @@
+<mat-form-field appearance="outline">
+  <mat-label>Ingredient</mat-label>
+  <input matInput name="ingredient" [formControl]="text" [matAutocomplete]="auto" autocomplete="off" />
+  @if (ambiguous()) {
+    <mat-hint class="ambiguous">"{{ query() }}" could mean more than one ingredient. Pick one.</mat-hint>
+  } @else if (!ingredient() && query()) {
+    <mat-hint>Pick an ingredient from the list.</mat-hint>
+  }
+</mat-form-field>
+
+<mat-autocomplete
+  #auto="matAutocomplete"
+  [displayWith]="displayWith"
+  [autoActiveFirstOption]="!ambiguous()"
+  (optionSelected)="select($event.option.value)"
+>
+  @for (match of matches(); track match.ingredient.id) {
+    <mat-option [value]="match">
+      {{ match.ingredient.canonicalName }}
+      @if (match.matchedAlias !== match.ingredient.canonicalName) {
+        <small>(matched "{{ match.matchedAlias }}")</small>
+      }
+    </mat-option>
+  }
+  @if (result.hasValue() && matches().length === 0) {
+    <mat-option disabled>No matching ingredient</mat-option>
+  }
+</mat-autocomplete>

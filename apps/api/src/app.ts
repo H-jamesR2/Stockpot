@@ -15,6 +15,7 @@ import { healthRoutes } from './modules/health/routes.js';
 import { ingredientRoutes } from './modules/ingredients/routes.js';
 import { pantryRoutes } from './modules/pantry/routes.js';
 import { recipeRoutes } from './modules/recipes/routes.js';
+import { unitRoutes } from './modules/units/routes.js';
 import { authPlugin } from './plugins/auth.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
 
@@ -62,6 +63,7 @@ export async function buildApp({ config, db: injectedDb }: BuildAppOptions): Pro
   await app.register(ingredientRoutes, { db, prefix: '/ingredients' });
   await app.register(pantryRoutes, { db, prefix: '/pantry' });
   await app.register(recipeRoutes, { db, prefix: '/recipes' });
+  await app.register(unitRoutes, { db, prefix: '/units' });
 
   return app;
 }
