@@ -34,4 +34,30 @@ describe('dev catalog seed', () => {
     `.execute(ctx.db);
     expect(rows.map((r) => r.alias)).toEqual(['coriander', 'pepper']);
   });
+
+  it('cites a MyPlate Kitchen page and contributor for every recipe', async () => {
+    const recipes = await ctx.db.selectFrom('recipes').select(['slug', 'source', 'source_url']).execute();
+    expect(recipes.length).toBeGreaterThan(0);
+    for (const recipe of recipes) {
+      expect(recipe.source_url).toBe(`https://www.myplate.gov/recipes/${recipe.slug}`);
+      expect(recipe.source).toMatch(/^USDA MyPlate Kitchen\. Recipe source: .+/);
+    }
+  });
+
+  it('gives every recipe ingredient lines and steps', async () => {
+    const { rows } = await sql<{ slug: string; lines: number; steps: number }>`
+      select r.slug,
+             (select count(*)::int from recipe_ingredients ri where ri.recipe_id = r.id) as lines,
+             (select count(*)::int from recipe_steps rs where rs.recipe_id = r.id) as steps
+      from recipes r
+    `.execute(ctx.db);
+    expect(rows.filter((r) => r.lines === 0 || r.steps === 0)).toEqual([]);
+  });
+
+  it('includes braises to filter by', async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: '/recipes?method=braise' });
+    const slugs = res.json().items.map((r: { slug: string }) => r.slug);
+    expect(slugs).toContain('braised-chicken-thighs-spinach');
+    expect(slugs.length).toBeGreaterThanOrEqual(3);
+  });
 });
