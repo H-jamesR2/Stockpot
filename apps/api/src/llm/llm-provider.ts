@@ -9,6 +9,8 @@ export interface ChatMessage {
 export interface ChatOptions {
   /** 0 keeps answers as deterministic as the model allows. */
   temperature?: number;
+  /** Aborting stops generation, for example when the client disconnects mid-answer. */
+  signal?: AbortSignal;
 }
 
 /**
@@ -21,6 +23,8 @@ export interface LlmProvider {
   readonly chatModel: string;
   embed(texts: string[], purpose: EmbedPurpose): Promise<number[][]>;
   chat(messages: ChatMessage[], options?: ChatOptions): Promise<string>;
+  /** Yields the reply in pieces as the model writes it. */
+  chatStream(messages: ChatMessage[], options?: ChatOptions): AsyncIterable<string>;
 }
 
 export class LlmError extends Error {

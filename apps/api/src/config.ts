@@ -15,6 +15,11 @@ const Env = z.object({
   CHAT_MODEL: z.string().min(1).default('qwen2.5:3b'),
   // Local models on a CPU can take minutes for a long answer.
   LLM_TIMEOUT_MS: z.coerce.number().int().min(1000).default(180_000),
+  // Questions whose closest chunk is farther than this (cosine distance) are declined without
+  // calling the chat model. Measured on nomic-embed-text: answerable 0.11 to 0.25, unanswerable 0.40+.
+  ASK_MAX_DISTANCE: z.coerce.number().min(0).max(2).default(0.35),
+  // Keeps the prompt inside qwen2.5:3b's 4,096 token window in Ollama.
+  ASK_MAX_SOURCE_TOKENS: z.coerce.number().int().min(100).default(2000),
   STORAGE_DRIVER: z.enum(['local']).default('local'),
   // Relative paths resolve from the API's working directory (apps/api in dev).
   STORAGE_DIR: z.string().min(1).default('data/uploads'),

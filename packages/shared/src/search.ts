@@ -24,6 +24,8 @@ export const SearchResult = z.object({
   score: z.number(),
   /** 1-based rank in vector search, or null when the chunk was not among the vector candidates. */
   vectorRank: z.number().int().nullable(),
+  /** Cosine distance to the query (0 is identical, 2 is opposite), or null when vectorRank is null. */
+  vectorDistance: z.number().nullable(),
   /** 1-based rank in full-text search, or null when no query word matched. */
   textRank: z.number().int().nullable(),
 });

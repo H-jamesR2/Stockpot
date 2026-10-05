@@ -24,6 +24,8 @@ export class FakeLlmProvider implements LlmProvider {
   chatCalls: ChatMessage[][] = [];
   /** Set to make the next embed call fail as if the model server were down. */
   failEmbed = false;
+  /** Set to make the next chat stream fail. */
+  failChat = false;
   chatReply = 'Fake reply.';
 
   constructor(embeddingModel = 'fake-embed') {
@@ -47,5 +49,12 @@ export class FakeLlmProvider implements LlmProvider {
   async chat(messages: ChatMessage[]): Promise<string> {
     this.chatCalls.push(messages);
     return this.chatReply;
+  }
+
+  /** Streams chatReply word by word, like a model writing it out. */
+  async *chatStream(messages: ChatMessage[]): AsyncIterable<string> {
+    this.chatCalls.push(messages);
+    if (this.failChat) throw new LlmError('Could not reach Ollama at http://fake. Is it running?');
+    for (const piece of this.chatReply.match(/\S+\s*/g) ?? []) yield piece;
   }
 }

@@ -20,6 +20,8 @@ import { authPlugin } from './plugins/auth.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
 import { createLlmProvider, type LlmProvider } from './llm/index.js';
 import { documentRoutes } from './modules/documents/routes.js';
+import { AnswerService } from './modules/ask/answer-service.js';
+import { askRoutes } from './modules/ask/routes.js';
 import { searchRoutes } from './modules/search/routes.js';
 import { SearchService } from './modules/search/search-service.js';
 import { IngestionService } from './modules/documents/ingestion-service.js';
@@ -84,7 +86,13 @@ export async function buildApp({
     storage,
     prefix: '/documents',
   });
-  await app.register(searchRoutes, { search: new SearchService(db, llm), prefix: '/search' });
+  const search = new SearchService(db, llm);
+  await app.register(searchRoutes, { search, prefix: '/search' });
+  const answers = new AnswerService(search, llm, {
+    maxDistance: config.ASK_MAX_DISTANCE,
+    maxSourceTokens: config.ASK_MAX_SOURCE_TOKENS,
+  });
+  await app.register(askRoutes, { answers, prefix: '/ask' });
 
   return app;
 }

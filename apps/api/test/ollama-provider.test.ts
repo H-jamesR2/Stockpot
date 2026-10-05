@@ -96,3 +96,59 @@ describe('OllamaProvider', () => {
     );
   });
 });
+
+describe('OllamaProvider.chatStream', () => {
+  function streamOf(chunks: string[]): Response {
+    const encoder = new TextEncoder();
+    return new Response(
+      new ReadableStream({
+        start(controller) {
+          for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+          controller.close();
+        },
+      }),
+      { status: 200, headers: { 'content-type': 'application/x-ndjson' } },
+    );
+  }
+
+  async function collect(iterable: AsyncIterable<string>): Promise<string[]> {
+    const pieces: string[] = [];
+    for await (const piece of iterable) pieces.push(piece);
+    return pieces;
+  }
+
+  it('streams message pieces, including lines split across network chunks', async () => {
+    const { calls, fetchImpl } = fakeFetch(() =>
+      streamOf([
+        '{"message":{"content":"Braise "},"done":false}\n{"message":{"content":"low',
+        ' and "},"done":false}\n',
+        '{"message":{"content":"slow."},"done":false}\n{"message":{"content":""},"done":true}',
+      ]),
+    );
+    const pieces = await collect(provider(fetchImpl).chatStream([{ role: 'user', content: 'How?' }]));
+
+    expect(pieces).toEqual(['Braise ', 'low and ', 'slow.']);
+    expect(calls[0]?.body).toMatchObject({ stream: true, options: { temperature: 0 } });
+  });
+
+  it('surfaces an error Ollama reports mid-stream', async () => {
+    const { fetchImpl } = fakeFetch(() =>
+      streamOf(['{"message":{"content":"Brai"},"done":false}\n{"error":"model ran out of memory"}\n']),
+    );
+    await expect(collect(provider(fetchImpl).chatStream([{ role: 'user', content: 'x' }]))).rejects.toThrow(
+      'Ollama stopped mid-answer: model ran out of memory',
+    );
+  });
+
+  it('passes the caller abort signal to the request', async () => {
+    let seen: AbortSignal | undefined;
+    const fetchImpl = (async (_url: string, init: RequestInit) => {
+      seen = init.signal ?? undefined;
+      return streamOf(['{"message":{"content":"ok"},"done":true}\n']);
+    }) as typeof fetch;
+    const controller = new AbortController();
+    await collect(provider(fetchImpl).chatStream([{ role: 'user', content: 'x' }], { signal: controller.signal }));
+    controller.abort();
+    expect(seen?.aborted).toBe(true);
+  });
+});
