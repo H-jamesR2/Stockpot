@@ -1,0 +1,41 @@
+<a mat-button routerLink="/documents">← All documents</a>
+
+@if (document.isLoading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading document" />
+}
+
+@if (notFound()) {
+  <p class="message" role="alert">That document does not exist.</p>
+} @else if (document.error()) {
+  <p class="message" role="alert">
+    Could not load this document.
+    <button mat-button type="button" (click)="document.reload()">Try again</button>
+  </p>
+}
+
+@if (document.hasValue()) {
+  @let doc = document.value();
+  <h1>{{ doc.title }}</h1>
+  <p class="meta">
+    {{ kindLabels[doc.kind] }} · {{ formatBytes(doc.byteSize) }} · {{ doc.chunkCount }}
+    {{ doc.chunkCount === 1 ? 'chunk' : 'chunks' }} · {{ doc.embeddingModel ?? 'not embedded' }}
+    @if (doc.ingestedAt) {
+      · ingested {{ doc.ingestedAt | date: 'medium' }}
+    }
+  </p>
+  @if (doc.recipeSlug) {
+    <p><a [routerLink]="['/recipes', doc.recipeSlug]">Open the recipe</a></p>
+  }
+
+  <ol class="chunks">
+    @for (chunk of doc.chunks; track chunk.id) {
+      <li [id]="chunkAnchor(chunk.position)">
+        <div class="chunk-head">
+          <span class="path">{{ chunk.headings.length > 0 ? chunk.headings.join(' > ') : doc.title }}</span>
+          <span class="tokens">about {{ chunk.tokenCount }} tokens</span>
+        </div>
+        <p class="content">{{ body(chunk.content) }}</p>
+      </li>
+    }
+  </ol>
+}
