@@ -9,6 +9,12 @@ const Env = z.object({
   AUTH_PROVIDER: z.enum(['local']).default('local'),
   DEV_USER_EMAIL: z.email().default('dev@stockpot.local'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  LLM_PROVIDER: z.enum(['ollama']).default('ollama'),
+  OLLAMA_BASE_URL: z.url().default('http://localhost:11434'),
+  EMBED_MODEL: z.string().min(1).default('nomic-embed-text'),
+  CHAT_MODEL: z.string().min(1).default('qwen2.5:3b'),
+  // Local models on a CPU can take minutes for a long answer.
+  LLM_TIMEOUT_MS: z.coerce.number().int().min(1000).default(180_000),
 });
 
 export type Config = z.infer<typeof Env>;
