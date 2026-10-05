@@ -2,6 +2,7 @@ import { STATUS_CODES } from 'node:http';
 import type { FastifyError, FastifyInstance } from 'fastify';
 import { hasZodFastifySchemaValidationErrors, isResponseSerializationError } from 'fastify-type-provider-zod';
 import { pgErrorCode } from '../db/index.js';
+import { LlmError } from '../llm/index.js';
 
 // Postgres SQLSTATE codes we translate into client errors
 const PG_FOREIGN_KEY_VIOLATION = '23503';
@@ -22,6 +23,12 @@ export function registerErrorHandler(app: FastifyInstance): void {
       // Our own response did not match its schema. That's a server bug, not a client error.
       request.log.error({ err, issues: err.cause.issues }, 'Response failed schema validation');
       return reply.status(500).send({ statusCode: 500, error: 'Internal Server Error', message: 'Internal error' });
+    }
+
+    if (err instanceof LlmError) {
+      // The model server is down or misbehaving. Say so instead of hiding it behind a generic 500.
+      request.log.error({ err }, 'Model provider failed');
+      return reply.status(502).send({ statusCode: 502, error: 'Bad Gateway', message: err.message });
     }
 
     switch (pgErrorCode(err)) {
