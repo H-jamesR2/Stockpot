@@ -20,6 +20,8 @@ import { authPlugin } from './plugins/auth.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
 import { createLlmProvider, type LlmProvider } from './llm/index.js';
 import { documentRoutes } from './modules/documents/routes.js';
+import { searchRoutes } from './modules/search/routes.js';
+import { SearchService } from './modules/search/search-service.js';
 import { IngestionService } from './modules/documents/ingestion-service.js';
 import { createFileStorage, type FileStorage } from './storage/index.js';
 
@@ -82,6 +84,7 @@ export async function buildApp({
     storage,
     prefix: '/documents',
   });
+  await app.register(searchRoutes, { search: new SearchService(db, llm), prefix: '/search' });
 
   return app;
 }
