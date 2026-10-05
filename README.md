@@ -20,7 +20,7 @@ On macOS 13 or older, set `NG_BUILD_SASS_EMBEDDED=0` before building the web app
 
 Neo4j: `docker compose --profile graph up -d`. It is off by default until the graph phase.
 
-Ollama: `docker compose --profile ollama up -d` on Linux or Windows, or install it natively on macOS.
+Ollama: `docker compose --profile ollama up -d` starts it in Docker and pulls the models. On Apple Silicon with macOS 14 or newer, installing it natively is faster because it can use the GPU.
 
 ## Test
 

@@ -5,11 +5,12 @@ name: stockpot
 #
 #   docker compose up -d                          Postgres and migrations
 #   docker compose --profile graph up -d          also Neo4j (not used until the graph phase)
-#   docker compose --profile ollama up -d         also Ollama (Linux/Windows)
+#   docker compose --profile ollama up -d         also Ollama, and pulls the models once
 #   docker compose --profile seed run --rm seed   load the dev seed
 #
-# On macOS, install Ollama natively instead. Docker on Mac cannot use the
-# Apple GPU, so models run far slower in a container.
+# Apple Silicon Macs on macOS 14+ can install Ollama natively instead to use the GPU.
+# Intel Macs run Ollama on the CPU either way, and the native app needs macOS 14,
+# so the container is the simplest option there.
 
 services:
   postgres:
@@ -111,7 +112,7 @@ services:
       - ollama:/root/.ollama
     entrypoint: ['/bin/sh', '-c']
     command:
-      - ollama pull ${OLLAMA_EMBED_MODEL:-nomic-embed-text} && ollama pull ${OLLAMA_CHAT_MODEL:-llama3.1:8b}
+      - ollama pull ${EMBED_MODEL:-nomic-embed-text} && ollama pull ${CHAT_MODEL:-qwen2.5:3b}
     restart: 'no'
 
 volumes:
