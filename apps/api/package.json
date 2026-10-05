@@ -10,7 +10,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "llm:check": "tsx --env-file-if-exists=../../.env src/scripts/llm-check.ts"
+    "llm:check": "tsx --env-file-if-exists=../../.env src/scripts/llm-check.ts",
+    "ingest:recipes": "tsx --env-file-if-exists=../../.env src/scripts/ingest-recipes.ts",
+    "reembed": "tsx --env-file-if-exists=../../.env src/scripts/reembed.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.0",

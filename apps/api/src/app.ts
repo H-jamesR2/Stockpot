@@ -18,14 +18,26 @@ import { recipeRoutes } from './modules/recipes/routes.js';
 import { unitRoutes } from './modules/units/routes.js';
 import { authPlugin } from './plugins/auth.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
+import { createLlmProvider, type LlmProvider } from './llm/index.js';
+import { documentRoutes } from './modules/documents/routes.js';
+import { IngestionService } from './modules/documents/ingestion-service.js';
+import { createFileStorage, type FileStorage } from './storage/index.js';
 
 export interface BuildAppOptions {
   config: Config;
   /** Pass an existing database (tests). Otherwise one is created and closed with the app. */
   db?: Database;
+  /** Tests pass a fake so they never need a model server. */
+  llm?: LlmProvider;
+  storage?: FileStorage;
 }
 
-export async function buildApp({ config, db: injectedDb }: BuildAppOptions): Promise<FastifyInstance> {
+export async function buildApp({
+  config,
+  db: injectedDb,
+  llm = createLlmProvider(config),
+  storage = createFileStorage(config),
+}: BuildAppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger: {
       level: config.LOG_LEVEL,
@@ -64,6 +76,12 @@ export async function buildApp({ config, db: injectedDb }: BuildAppOptions): Pro
   await app.register(pantryRoutes, { db, prefix: '/pantry' });
   await app.register(recipeRoutes, { db, prefix: '/recipes' });
   await app.register(unitRoutes, { db, prefix: '/units' });
+  await app.register(documentRoutes, {
+    db,
+    ingestion: new IngestionService(db, llm, storage),
+    storage,
+    prefix: '/documents',
+  });
 
   return app;
 }
