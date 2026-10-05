@@ -14,6 +14,7 @@ type GeneratedUuid = ColumnType<string, string | undefined, never>;
 
 export type UnitKind = 'mass' | 'volume' | 'count';
 export type PantryLocation = 'fridge' | 'freezer' | 'pantry';
+export type DocumentKind = 'recipe' | 'technique' | 'note';
 export type IngredientCategory =
   | 'produce'
   | 'herb'
@@ -120,6 +121,35 @@ export interface RecipeStepsTable {
   text: string;
 }
 
+export interface DocumentsTable {
+  id: GeneratedUuid;
+  kind: DocumentKind;
+  title: string;
+  recipe_id: string | null;
+  storage_key: string | null;
+  content_type: string;
+  byte_size: number;
+  content_hash: string;
+  ingested_at: Date | null;
+  created_by: string | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface ChunksTable {
+  id: GeneratedUuid;
+  document_id: string;
+  position: number;
+  content: string;
+  token_count: number;
+  /** pgvector text form, for example '[0.1,0.2]'. */
+  embedding: string | null;
+  embedding_model: string | null;
+  tsv: ColumnType<string, never, never>;
+  metadata: Generated<Record<string, unknown>>;
+  created_at: CreatedAt;
+}
+
 export interface DB {
   users: UsersTable;
   units: UnitsTable;
@@ -130,4 +160,6 @@ export interface DB {
   recipes: RecipesTable;
   recipe_ingredients: RecipeIngredientsTable;
   recipe_steps: RecipeStepsTable;
+  documents: DocumentsTable;
+  chunks: ChunksTable;
 }

@@ -8,3 +8,4 @@ CLAUDE.md
 .angular/
 out-tsc/
 .DS_Store
+data/

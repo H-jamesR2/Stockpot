@@ -15,6 +15,9 @@ const Env = z.object({
   CHAT_MODEL: z.string().min(1).default('qwen2.5:3b'),
   // Local models on a CPU can take minutes for a long answer.
   LLM_TIMEOUT_MS: z.coerce.number().int().min(1000).default(180_000),
+  STORAGE_DRIVER: z.enum(['local']).default('local'),
+  // Relative paths resolve from the API's working directory (apps/api in dev).
+  STORAGE_DIR: z.string().min(1).default('data/uploads'),
 });
 
 export type Config = z.infer<typeof Env>;
