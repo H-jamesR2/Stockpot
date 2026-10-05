@@ -58,15 +58,21 @@ describe('search', () => {
     return { status: res.statusCode, results: res.json().results };
   }
 
-  it('ranks the chunk that matches by meaning and by keywords first', async () => {
+  it('ranks chunks found by both meaning and keywords above chunks found by only one', async () => {
     const { status, results } = await search('q=how long to braise chuck roast');
     expect(status).toBe(200);
 
-    const [top] = results;
-    expect(top).toMatchObject({ documentTitle: 'Braising', headings: ['Braising', 'Time'] });
-    expect(top!.vectorRank).not.toBeNull();
-    expect(top!.textRank).not.toBeNull();
-    expect(top!.score).toBeCloseTo(1 / (RRF_K + top!.vectorRank!) + 1 / (RRF_K + top!.textRank!), 5);
+    // The braising note and the braised chuck recipe both match. Their fused scores are close, so
+    // the test checks the ranking rule instead of which of the two good answers comes first.
+    const [first, second, ...rest] = results;
+    expect([first!.documentTitle, second!.documentTitle].sort()).toEqual(['Braising', 'Red Wine Braised Chuck']);
+    for (const top of [first!, second!]) {
+      expect(top.vectorRank).not.toBeNull();
+      expect(top.textRank).not.toBeNull();
+      expect(top.score).toBeCloseTo(1 / (RRF_K + top.vectorRank!) + 1 / (RRF_K + top.textRank!), 5);
+    }
+    expect(results.find((r) => r.documentTitle === 'Braising')?.headings).toEqual(['Braising', 'Time']);
+    for (const other of rest) expect(other.score).toBeLessThan(second!.score);
   });
 
   it('embeds the search text as a query, not a document', async () => {

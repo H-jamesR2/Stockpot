@@ -24,6 +24,9 @@ interface ResultRow {
   text_rank: number | null;
 }
 
+// Ties are broken by document title, then chunk position, never by id. Ids are random, so
+// breaking ties by id would reorder equal results every time the data is rebuilt.
+
 /**
  * Hybrid retrieval: vector similarity and Postgres full-text ranking each pick candidates, and
  * reciprocal rank fusion combines them by rank, so the two very different score scales never
@@ -49,22 +52,22 @@ export class SearchService {
       ),
       -- Vectors from different models are not comparable, so only chunks embedded by the current one count.
       vector_hits as (
-        select c.id, row_number() over (order by c.embedding <=> ${vector}::vector) as rank
+        select c.id, row_number() over (order by c.embedding <=> ${vector}::vector, d.title, c.position) as rank
         from chunks c
         join documents d on d.id = c.document_id
         where c.embedding_model = ${this.llm.embeddingModel}
           and (${kind}::document_kind is null or d.kind = ${kind}::document_kind)
-        order by c.embedding <=> ${vector}::vector
+        order by c.embedding <=> ${vector}::vector, d.title, c.position
         limit ${CANDIDATES_PER_RETRIEVER}
       ),
       text_hits as (
-        select c.id, row_number() over (order by ts_rank_cd(c.tsv, ts.query) desc, c.id) as rank
+        select c.id, row_number() over (order by ts_rank_cd(c.tsv, ts.query) desc, d.title, c.position) as rank
         from chunks c
         join documents d on d.id = c.document_id
         cross join ts
         where c.tsv @@ ts.query
           and (${kind}::document_kind is null or d.kind = ${kind}::document_kind)
-        order by ts_rank_cd(c.tsv, ts.query) desc, c.id
+        order by ts_rank_cd(c.tsv, ts.query) desc, d.title, c.position
         limit ${CANDIDATES_PER_RETRIEVER}
       ),
       fused as (
@@ -81,7 +84,7 @@ export class SearchService {
       ),
       per_document as (
         select f.*, c.document_id,
-               row_number() over (partition by c.document_id order by f.score desc, f.id) as document_rank
+               row_number() over (partition by c.document_id order by f.score desc, c.position) as document_rank
         from fused f
         join chunks c on c.id = f.id
       )
@@ -101,7 +104,7 @@ export class SearchService {
       join documents d on d.id = c.document_id
       left join recipes r on r.id = d.recipe_id
       where p.document_rank <= ${query.perDocument}
-      order by p.score desc, c.id
+      order by p.score desc, d.title, c.position
       limit ${query.limit}
     `.execute(this.db);
 
