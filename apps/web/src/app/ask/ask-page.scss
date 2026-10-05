@@ -1,0 +1,80 @@
+.intro,
+.meta,
+.distance,
+.progress p {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.question {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+
+  mat-form-field {
+    flex: 1;
+  }
+
+  .actions {
+    padding-top: 8px;
+  }
+}
+
+.progress {
+  margin-top: 12px;
+
+  p {
+    margin: 8px 0 0;
+    font: var(--mat-sys-body-small);
+  }
+}
+
+.answer {
+  margin-top: 24px;
+
+  h2 {
+    font: var(--mat-sys-title-medium);
+  }
+}
+
+.text {
+  font: var(--mat-sys-body-large);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.cite {
+  margin-left: 2px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.declined {
+  font-style: italic;
+}
+
+.warning,
+.error {
+  color: var(--mat-sys-error);
+}
+
+.note,
+.meta,
+.distance {
+  font: var(--mat-sys-body-small);
+}
+
+.sources {
+  margin-top: 24px;
+
+  h2 {
+    font: var(--mat-sys-title-small);
+  }
+
+  li {
+    margin-bottom: 6px;
+  }
+
+  .distance {
+    margin-left: 8px;
+  }
+}
