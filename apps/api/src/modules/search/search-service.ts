@@ -21,6 +21,7 @@ interface ResultRow {
   content: string;
   score: number;
   vector_rank: number | null;
+  vector_distance: number | null;
   text_rank: number | null;
 }
 
@@ -52,7 +53,9 @@ export class SearchService {
       ),
       -- Vectors from different models are not comparable, so only chunks embedded by the current one count.
       vector_hits as (
-        select c.id, row_number() over (order by c.embedding <=> ${vector}::vector, d.title, c.position) as rank
+        select c.id,
+               row_number() over (order by c.embedding <=> ${vector}::vector, d.title, c.position) as rank,
+               c.embedding <=> ${vector}::vector as distance
         from chunks c
         join documents d on d.id = c.document_id
         where c.embedding_model = ${this.llm.embeddingModel}
@@ -74,11 +77,12 @@ export class SearchService {
         select id,
                sum(1.0 / (${RRF_K} + rank))::float8 as score,
                min(vector_rank)::int as vector_rank,
+               min(distance)::float8 as vector_distance,
                min(text_rank)::int as text_rank
         from (
-          select id, rank, rank as vector_rank, null::bigint as text_rank from vector_hits
+          select id, rank, rank as vector_rank, distance, null::bigint as text_rank from vector_hits
           union all
-          select id, rank, null, rank from text_hits
+          select id, rank, null, null, rank from text_hits
         ) hits
         group by id
       ),
@@ -98,6 +102,7 @@ export class SearchService {
         c.content,
         p.score,
         p.vector_rank,
+        p.vector_distance,
         p.text_rank
       from per_document p
       join chunks c on c.id = p.id
@@ -118,6 +123,7 @@ export class SearchService {
       content: row.content,
       score: Math.round(row.score * 1e6) / 1e6,
       vectorRank: row.vector_rank,
+      vectorDistance: row.vector_distance === null ? null : Math.round(row.vector_distance * 1e4) / 1e4,
       textRank: row.text_rank,
     }));
   }

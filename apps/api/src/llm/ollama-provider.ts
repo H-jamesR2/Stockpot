@@ -45,33 +45,71 @@ export class OllamaProvider implements LlmProvider {
   }
 
   async chat(messages: ChatMessage[], options: ChatOptions = {}): Promise<string> {
-    const body = await this.post<{ message?: { content?: string } }>('/api/chat', {
-      model: this.chatModel,
-      messages,
-      stream: false,
-      options: { temperature: options.temperature ?? 0 },
-    });
+    const response = await this.request('/api/chat', this.chatPayload(messages, options, false), options.signal);
+    const body = (await response.json()) as { message?: { content?: string } };
     const content = body.message?.content;
     if (typeof content !== 'string') throw new LlmError('Ollama chat response had no message content');
     return content;
   }
 
+  async *chatStream(messages: ChatMessage[], options: ChatOptions = {}): AsyncIterable<string> {
+    const response = await this.request('/api/chat', this.chatPayload(messages, options, true), options.signal);
+    if (!response.body) throw new LlmError('Ollama returned no stream');
+
+    // Ollama streams one JSON object per line: { message: { content }, done }.
+    const decoder = new TextDecoder();
+    let buffered = '';
+    for await (const bytes of response.body) {
+      buffered += decoder.decode(bytes, { stream: true });
+      const lines = buffered.split('\n');
+      buffered = lines.pop() ?? '';
+      for (const line of lines) {
+        const piece = parseStreamLine(line);
+        if (piece) yield piece;
+      }
+    }
+    const last = parseStreamLine(buffered + decoder.decode());
+    if (last) yield last;
+  }
+
+  private chatPayload(messages: ChatMessage[], options: ChatOptions, stream: boolean) {
+    return { model: this.chatModel, messages, stream, options: { temperature: options.temperature ?? 0 } };
+  }
+
   private async post<T>(path: string, payload: unknown): Promise<T> {
+    return (await (await this.request(path, payload)).json()) as T;
+  }
+
+  private async request(path: string, payload: unknown, signal?: AbortSignal): Promise<Response> {
+    const timeout = AbortSignal.timeout(this.timeoutMs);
     let response: Response;
     try {
       response = await this.fetch(`${this.baseUrl}${path}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(this.timeoutMs),
+        signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
       });
     } catch (error) {
+      if (signal?.aborted) throw error;
       throw new LlmError(`Could not reach Ollama at ${this.baseUrl}. Is it running?`, { cause: error });
     }
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
       throw new LlmError(`Ollama ${path} failed with ${response.status}: ${detail.slice(0, 300)}`);
     }
-    return (await response.json()) as T;
+    return response;
   }
+}
+
+function parseStreamLine(line: string): string | null {
+  if (!line.trim()) return null;
+  let parsed: { message?: { content?: string }; error?: string };
+  try {
+    parsed = JSON.parse(line) as typeof parsed;
+  } catch (error) {
+    throw new LlmError(`Ollama sent an unreadable stream line: ${line.slice(0, 100)}`, { cause: error });
+  }
+  if (parsed.error) throw new LlmError(`Ollama stopped mid-answer: ${parsed.error}`);
+  return parsed.message?.content || null;
 }

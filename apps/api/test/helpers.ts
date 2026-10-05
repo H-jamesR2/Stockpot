@@ -24,7 +24,13 @@ export function useTestApp() {
     ctx.llm = new FakeLlmProvider();
     ctx.storageDir = await mkdtemp(path.join(tmpdir(), 'stockpot-test-storage-'));
     ctx.app = await buildApp({
-      config: loadConfig({ NODE_ENV: 'test', DATABASE_URL: databaseUrl, LOG_LEVEL: 'silent' }),
+      config: loadConfig({
+        NODE_ENV: 'test',
+        DATABASE_URL: databaseUrl,
+        LOG_LEVEL: 'silent',
+        // The fake bag-of-words embeddings sit farther apart than nomic's. Text sharing no words is still 1.0.
+        ASK_MAX_DISTANCE: '0.9',
+      }),
       db: ctx.db,
       llm: ctx.llm,
       storage: new LocalDiskStorage(ctx.storageDir),
@@ -38,6 +44,8 @@ export function useTestApp() {
     await rm(ctx.storageDir, { recursive: true, force: true });
     await mkdir(ctx.storageDir);
     ctx.llm.failEmbed = false;
+    ctx.llm.failChat = false;
+    ctx.llm.chatReply = 'Fake reply.';
     ctx.llm.embedCalls = [];
     ctx.llm.chatCalls = [];
   });
