@@ -31,12 +31,12 @@
 
   <ol class="chunks">
     @for (chunk of doc.chunks; track chunk.id) {
-      <li [id]="chunkAnchor(chunk.position)">
+      <li [id]="chunkAnchor(chunk.id)">
         <div class="chunk-head">
           <span class="path">{{ chunk.headings.length > 0 ? chunk.headings.join(' > ') : doc.title }}</span>
           <span class="tokens">about {{ chunk.tokenCount }} tokens</span>
         </div>
-        <p class="content">{{ body(chunk.content) }}</p>
+        <p class="content">{{ chunkBody(chunk.content) }}</p>
       </li>
     }
   </ol>

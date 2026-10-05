@@ -11,6 +11,7 @@ import { Router, RouterLink } from '@angular/router';
 import type { DocumentKind, DocumentList, DocumentSummary } from '@stockpot/shared';
 import { API_BASE_URL } from '../core/api-base-url';
 import { formatBytes, KIND_LABELS } from './document-labels';
+import { DocumentSearch } from './document-search';
 import { UploadDocumentDialog } from './upload-document-dialog';
 
 const KINDS: readonly DocumentKind[] = ['recipe', 'technique', 'note'];
@@ -18,13 +19,22 @@ const KINDS: readonly DocumentKind[] = ['recipe', 'technique', 'note'];
 /** Everything retrieval can draw on: recipes rendered as text, plus uploaded technique pages and notes. */
 @Component({
   selector: 'sp-document-list-page',
-  imports: [DatePipe, MatButtonModule, MatButtonToggleModule, MatProgressBarModule, MatTableModule, RouterLink],
+  imports: [
+    DatePipe,
+    DocumentSearch,
+    MatButtonModule,
+    MatButtonToggleModule,
+    MatProgressBarModule,
+    MatTableModule,
+    RouterLink,
+  ],
   templateUrl: './document-list-page.html',
   styleUrl: './document-list-page.scss',
 })
 export class DocumentListPage {
   // Bound from the query string by withComponentInputBinding.
   readonly kind = input<string>();
+  readonly q = input<string>();
 
   private readonly router = inject(Router);
   private readonly apiBaseUrl = inject(API_BASE_URL);
@@ -61,6 +71,10 @@ export class DocumentListPage {
         this.documents.reload();
         this.snackBar.open(`Added ${created.title} in ${created.chunkCount} chunks`, undefined, { duration: 4000 });
       });
+  }
+
+  protected setQuery(q: string): void {
+    void this.router.navigate([], { queryParams: { q: q.trim() || null }, queryParamsHandling: 'merge' });
   }
 
   protected setKind(kind: DocumentKind | 'all'): void {

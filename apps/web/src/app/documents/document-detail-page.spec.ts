@@ -37,7 +37,7 @@ describe('DocumentDetailPage', () => {
     expect(element.querySelector('h1')?.textContent).toBe('Beef Pot Roast');
 
     const chunks = element.querySelectorAll('.chunks li');
-    expect([...chunks].map((c) => c.id)).toEqual(['chunk-0', 'chunk-1']);
+    expect([...chunks].map((c) => c.id)).toEqual(detail().chunks.map((c) => `chunk-${c.id}`));
     expect(chunks[1]?.querySelector('.path')?.textContent).toBe('Beef Pot Roast > Steps');
     // The heading path line is shown once, above the chunk, not repeated in the body.
     expect(chunks[1]?.querySelector('.content')?.textContent).toBe('1. Cover and simmer for 2 hours.');

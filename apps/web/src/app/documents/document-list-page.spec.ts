@@ -67,6 +67,14 @@ describe('DocumentListPage', () => {
     expect(navigate).toHaveBeenCalledWith([], { queryParams: { kind: 'note' }, queryParamsHandling: 'merge' });
   });
 
+  it('puts a submitted search in the URL', async () => {
+    const { element } = await render();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    element.querySelector<HTMLInputElement>('input[name=q]')!.value = '  pot roast ';
+    element.querySelector('form[role=search]')!.dispatchEvent(new Event('submit'));
+    expect(navigate).toHaveBeenCalledWith([], { queryParams: { q: 'pot roast' }, queryParamsHandling: 'merge' });
+  });
+
   it('explains how to add recipes when there are no documents', async () => {
     const { element } = await render();
     expect(text(element.querySelector('.message'))).toContain('npm run ingest:recipes');

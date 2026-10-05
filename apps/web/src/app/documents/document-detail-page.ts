@@ -9,7 +9,7 @@ import { Router, RouterLink } from '@angular/router';
 import type { DocumentDetail } from '@stockpot/shared';
 import { API_BASE_URL } from '../core/api-base-url';
 import { ConfirmDialog, type ConfirmDialogData } from '../pantry/confirm-dialog';
-import { chunkAnchor, formatBytes, KIND_LABELS } from './document-labels';
+import { chunkAnchor, chunkBody, formatBytes, KIND_LABELS } from './document-labels';
 
 /** One document and the chunks it was split into, in order. Citations link here by chunk anchor. */
 @Component({
@@ -31,6 +31,7 @@ export class DocumentDetailPage {
   protected readonly kindLabels = KIND_LABELS;
   protected readonly formatBytes = formatBytes;
   protected readonly chunkAnchor = chunkAnchor;
+  protected readonly chunkBody = chunkBody;
 
   protected readonly document = httpResource<DocumentDetail>(
     () => `${this.apiBaseUrl}/documents/${encodeURIComponent(this.id())}`,
@@ -67,11 +68,5 @@ export class DocumentDetailPage {
           },
         });
       });
-  }
-
-  /** The chunk text starts with its heading path, which the page already shows above it. */
-  protected body(content: string): string {
-    const blank = content.indexOf('\n\n');
-    return blank === -1 ? content : content.slice(blank + 2);
   }
 }

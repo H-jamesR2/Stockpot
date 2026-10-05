@@ -7,6 +7,8 @@
   is split into chunks, and each chunk is embedded for search.
 </p>
 
+<sp-document-search [query]="q() ?? ''" [kind]="kindFilter()" (queryChange)="setQuery($event)" />
+
 <mat-button-toggle-group
   aria-label="Kind"
   hideSingleSelectionIndicator
