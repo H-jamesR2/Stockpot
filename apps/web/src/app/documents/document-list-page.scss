@@ -1,3 +1,9 @@
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .intro,
 .sub {
   color: var(--mat-sys-on-surface-variant);

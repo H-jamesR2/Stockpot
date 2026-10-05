@@ -25,6 +25,8 @@
   </p>
   @if (doc.recipeSlug) {
     <p><a [routerLink]="['/recipes', doc.recipeSlug]">Open the recipe</a></p>
+  } @else {
+    <button mat-stroked-button type="button" (click)="remove(doc)">Delete</button>
   }
 
   <ol class="chunks">

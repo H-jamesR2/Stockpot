@@ -1,7 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
+import { provideRouter, Router } from '@angular/router';
 import { DocumentDetailPage } from './document-detail-page';
 import { detail } from './test-data';
 
@@ -9,7 +10,14 @@ describe('DocumentDetailPage', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
+      ],
+    });
     http = TestBed.inject(HttpTestingController);
   });
 
@@ -50,5 +58,28 @@ describe('DocumentDetailPage', () => {
       ),
     );
     expect(element.textContent).toContain('That document does not exist.');
+  });
+
+  it('does not offer delete for recipe documents', async () => {
+    const recipe = await render((req) => req.flush(detail()));
+    expect([...recipe.querySelectorAll('button')].some((b) => b.textContent?.trim() === 'Delete')).toBe(false);
+  });
+
+  it('deletes an upload after the user confirms, then returns to the list', async () => {
+    const element = await render((req) =>
+      req.flush(detail({ kind: 'note', recipeSlug: null, title: 'Braising notes' })),
+    );
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    [...element.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Delete')!.click();
+    await new Promise((resolve) => setTimeout(resolve));
+    http.expectNone({ method: 'DELETE' });
+
+    document.querySelector<HTMLButtonElement>('sp-confirm-dialog button.confirm')!.click();
+    await new Promise((resolve) => setTimeout(resolve));
+    http
+      .expectOne({ method: 'DELETE', url: `/api/documents/${detail().id}` })
+      .flush(null, { status: 204, statusText: '' });
+    expect(navigate).toHaveBeenCalledWith(['/documents']);
   });
 });

@@ -3,12 +3,15 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, input } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
 import { Router, RouterLink } from '@angular/router';
-import type { DocumentKind, DocumentList } from '@stockpot/shared';
+import type { DocumentKind, DocumentList, DocumentSummary } from '@stockpot/shared';
 import { API_BASE_URL } from '../core/api-base-url';
 import { formatBytes, KIND_LABELS } from './document-labels';
+import { UploadDocumentDialog } from './upload-document-dialog';
 
 const KINDS: readonly DocumentKind[] = ['recipe', 'technique', 'note'];
 
@@ -25,6 +28,8 @@ export class DocumentListPage {
 
   private readonly router = inject(Router);
   private readonly apiBaseUrl = inject(API_BASE_URL);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
 
   protected readonly kinds = KINDS;
   protected readonly kindLabels = KIND_LABELS;
@@ -42,6 +47,20 @@ export class DocumentListPage {
   /** mat-table rows are untyped in templates, so look labels up through a typed method. */
   protected kindLabel(kind: DocumentKind): string {
     return KIND_LABELS[kind];
+  }
+
+  protected openUpload(): void {
+    this.dialog
+      .open<UploadDocumentDialog, undefined, DocumentSummary>(UploadDocumentDialog, {
+        width: '520px',
+        disableClose: true,
+      })
+      .afterClosed()
+      .subscribe((created) => {
+        if (!created) return;
+        this.documents.reload();
+        this.snackBar.open(`Added ${created.title} in ${created.chunkCount} chunks`, undefined, { duration: 4000 });
+      });
   }
 
   protected setKind(kind: DocumentKind | 'all'): void {

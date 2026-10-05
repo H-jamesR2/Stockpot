@@ -1,0 +1,42 @@
+<h2 mat-dialog-title>Upload a document</h2>
+
+<mat-dialog-content>
+  <form id="upload-form" [formGroup]="form" (ngSubmit)="upload()">
+    <label class="file">
+      <span class="label">File (.md, .markdown, or .txt)</span>
+      <input type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" (change)="choose($event)" />
+    </label>
+    @if (file(); as chosen) {
+      <p class="hint">{{ chosen.name }}, {{ chosen.content.length.toLocaleString() }} characters</p>
+    }
+
+    <mat-form-field appearance="outline">
+      <mat-label>Title</mat-label>
+      <input matInput formControlName="title" />
+      @if (form.controls.title.invalid) {
+        <mat-error>Give the document a title.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Kind</mat-label>
+      <mat-select formControlName="kind">
+        <mat-option value="technique">Technique</mat-option>
+        <mat-option value="note">Note</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    @if (uploading()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Uploading" />
+      <p class="hint">Splitting and embedding the file. On a CPU this can take a minute.</p>
+    }
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close [disabled]="uploading()">Cancel</button>
+  <button mat-flat-button type="submit" form="upload-form" [disabled]="!file() || uploading()">Upload</button>
+</mat-dialog-actions>
