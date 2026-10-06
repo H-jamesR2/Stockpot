@@ -12,6 +12,7 @@ export function createLlmProvider(config: Config): LlmProvider {
         embeddingModel: config.EMBED_MODEL,
         chatModel: config.CHAT_MODEL,
         timeoutMs: config.LLM_TIMEOUT_MS,
+        keepAlive: config.OLLAMA_KEEP_ALIVE,
       });
   }
 }

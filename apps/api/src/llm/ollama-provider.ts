@@ -4,7 +4,10 @@ export interface OllamaProviderOptions {
   baseUrl: string;
   embeddingModel: string;
   chatModel: string;
+  /** How long Ollama may go without sending anything before the request is abandoned. */
   timeoutMs: number;
+  /** How long Ollama keeps a model in memory after a request, as a duration like "30m". */
+  keepAlive?: string;
   /** Injected so tests can run without a model server. */
   fetch?: typeof fetch;
 }
@@ -21,6 +24,7 @@ export class OllamaProvider implements LlmProvider {
   readonly chatModel: string;
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
+  private readonly keepAlive: string | undefined;
   private readonly fetch: typeof fetch;
 
   constructor(options: OllamaProviderOptions) {
@@ -28,6 +32,7 @@ export class OllamaProvider implements LlmProvider {
     this.embeddingModel = options.embeddingModel;
     this.chatModel = options.chatModel;
     this.timeoutMs = options.timeoutMs;
+    this.keepAlive = options.keepAlive;
     this.fetch = options.fetch ?? fetch;
   }
 
@@ -37,6 +42,7 @@ export class OllamaProvider implements LlmProvider {
     const body = await this.post<{ embeddings?: number[][] }>('/api/embed', {
       model: this.embeddingModel,
       input: texts.map((text) => prefix + text),
+      ...this.keepAliveField(),
     });
     if (!Array.isArray(body.embeddings) || body.embeddings.length !== texts.length) {
       throw new LlmError(`Ollama returned ${body.embeddings?.length ?? 0} embeddings for ${texts.length} inputs`);
@@ -45,60 +51,129 @@ export class OllamaProvider implements LlmProvider {
   }
 
   async chat(messages: ChatMessage[], options: ChatOptions = {}): Promise<string> {
-    const response = await this.request('/api/chat', this.chatPayload(messages, options, false), options.signal);
-    const body = (await response.json()) as { message?: { content?: string } };
+    const body = await this.post<{ message?: { content?: string } }>(
+      '/api/chat',
+      this.chatPayload(messages, options, false),
+      options.signal,
+    );
     const content = body.message?.content;
     if (typeof content !== 'string') throw new LlmError('Ollama chat response had no message content');
     return content;
   }
 
   async *chatStream(messages: ChatMessage[], options: ChatOptions = {}): AsyncIterable<string> {
-    const response = await this.request('/api/chat', this.chatPayload(messages, options, true), options.signal);
-    if (!response.body) throw new LlmError('Ollama returned no stream');
+    const idle = new IdleTimeout(this.timeoutMs);
+    try {
+      const response = await this.send('/api/chat', this.chatPayload(messages, options, true), idle, options.signal);
+      if (!response.body) throw new LlmError('Ollama returned no stream');
 
-    // Ollama streams one JSON object per line: { message: { content }, done }.
-    const decoder = new TextDecoder();
-    let buffered = '';
-    for await (const bytes of response.body) {
-      buffered += decoder.decode(bytes, { stream: true });
-      const lines = buffered.split('\n');
-      buffered = lines.pop() ?? '';
-      for (const line of lines) {
-        const piece = parseStreamLine(line);
-        if (piece) yield piece;
+      // Ollama streams one JSON object per line: { message: { content }, done }.
+      const decoder = new TextDecoder();
+      let buffered = '';
+      for await (const bytes of response.body) {
+        // A long answer is fine as long as Ollama keeps sending. Only silence times out.
+        idle.touch();
+        buffered += decoder.decode(bytes, { stream: true });
+        const lines = buffered.split('\n');
+        buffered = lines.pop() ?? '';
+        for (const line of lines) {
+          const piece = parseStreamLine(line);
+          if (piece) yield piece;
+        }
       }
+      const last = parseStreamLine(buffered + decoder.decode());
+      if (last) yield last;
+    } catch (error) {
+      throw this.explain(error, idle, options.signal);
+    } finally {
+      idle.clear();
     }
-    const last = parseStreamLine(buffered + decoder.decode());
-    if (last) yield last;
   }
 
   private chatPayload(messages: ChatMessage[], options: ChatOptions, stream: boolean) {
-    return { model: this.chatModel, messages, stream, options: { temperature: options.temperature ?? 0 } };
+    return {
+      model: this.chatModel,
+      messages,
+      stream,
+      options: { temperature: options.temperature ?? 0 },
+      ...this.keepAliveField(),
+    };
   }
 
-  private async post<T>(path: string, payload: unknown): Promise<T> {
-    return (await (await this.request(path, payload)).json()) as T;
+  private keepAliveField(): { keep_alive?: string } {
+    return this.keepAlive ? { keep_alive: this.keepAlive } : {};
   }
 
-  private async request(path: string, payload: unknown, signal?: AbortSignal): Promise<Response> {
-    const timeout = AbortSignal.timeout(this.timeoutMs);
-    let response: Response;
+  private async post<T>(path: string, payload: unknown, signal?: AbortSignal): Promise<T> {
+    const idle = new IdleTimeout(this.timeoutMs);
     try {
-      response = await this.fetch(`${this.baseUrl}${path}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-      });
+      return (await (await this.send(path, payload, idle, signal)).json()) as T;
     } catch (error) {
-      if (signal?.aborted) throw error;
-      throw new LlmError(`Could not reach Ollama at ${this.baseUrl}. Is it running?`, { cause: error });
+      throw this.explain(error, idle, signal);
+    } finally {
+      idle.clear();
     }
+  }
+
+  private async send(path: string, payload: unknown, idle: IdleTimeout, signal?: AbortSignal): Promise<Response> {
+    const response = await this.fetch(`${this.baseUrl}${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: signal ? AbortSignal.any([signal, idle.signal]) : idle.signal,
+    });
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
       throw new LlmError(`Ollama ${path} failed with ${response.status}: ${detail.slice(0, 300)}`);
     }
     return response;
+  }
+
+  /** Turns a low-level failure into a message that says what actually went wrong. */
+  private explain(error: unknown, idle: IdleTimeout, signal?: AbortSignal): unknown {
+    if (signal?.aborted || error instanceof LlmError) return error;
+    if (idle.fired) {
+      const seconds = Math.round(this.timeoutMs / 1000);
+      return new LlmError(
+        `Ollama did not respond within ${seconds} s. Loading a model on a CPU can take minutes, so try again or raise LLM_TIMEOUT_MS.`,
+        { cause: error },
+      );
+    }
+    return new LlmError(`Could not reach Ollama at ${this.baseUrl}. Is it running?`, { cause: error });
+  }
+}
+
+/** Aborts after ms of silence. touch() restarts the countdown whenever something arrives. */
+class IdleTimeout {
+  private readonly controller = new AbortController();
+  private timer: ReturnType<typeof setTimeout>;
+
+  constructor(private readonly ms: number) {
+    this.timer = this.arm();
+  }
+
+  get signal(): AbortSignal {
+    return this.controller.signal;
+  }
+
+  get fired(): boolean {
+    return this.controller.signal.aborted;
+  }
+
+  touch(): void {
+    clearTimeout(this.timer);
+    this.timer = this.arm();
+  }
+
+  clear(): void {
+    clearTimeout(this.timer);
+  }
+
+  private arm(): ReturnType<typeof setTimeout> {
+    return setTimeout(
+      () => this.controller.abort(new DOMException('No response from Ollama', 'TimeoutError')),
+      this.ms,
+    );
   }
 }
 

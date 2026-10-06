@@ -31,7 +31,8 @@
     <mat-progress-bar mode="indeterminate" />
     <p>
       {{ status() === 'retrieving' ? 'Finding sources' : 'Writing the answer' }}… {{ elapsedSeconds() }} s. A local
-      model on a CPU can take a minute or two.
+      model on a CPU usually takes one to two minutes. The first question after a break also loads the model, which can
+      add a few more.
     </p>
   </div>
 }
