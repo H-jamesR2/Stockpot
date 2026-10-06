@@ -1,0 +1,43 @@
+mat-progress-bar,
+.message {
+  margin-top: 16px;
+}
+
+.meta {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.chunks {
+  padding-left: 24px;
+
+  li {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 12px;
+    scroll-margin-top: 16px;
+
+    // A citation link lands here with #chunk-n in the URL.
+    &:target {
+      border-color: var(--mat-sys-primary);
+      background: var(--mat-sys-primary-container);
+    }
+  }
+}
+
+.chunk-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  font: var(--mat-sys-label-large);
+}
+
+.tokens {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.content {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+}

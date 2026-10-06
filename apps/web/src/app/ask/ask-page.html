@@ -1,0 +1,103 @@
+<h1>Ask</h1>
+<p class="intro">
+  Answers come only from your documents, with numbered citations you can follow. If nothing in them answers the
+  question, it says so instead of guessing.
+</p>
+
+<form class="question" (submit)="$event.preventDefault(); ask(box.value)">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Question</mat-label>
+    <textarea
+      #box
+      matInput
+      name="question"
+      rows="2"
+      maxlength="500"
+      placeholder="How long should I cook the beef pot roast?"
+      [disabled]="running()"
+    ></textarea>
+  </mat-form-field>
+  <div class="actions">
+    @if (running()) {
+      <button mat-stroked-button type="button" (click)="stop()">Stop</button>
+    } @else {
+      <button mat-flat-button type="submit">Ask</button>
+    }
+  </div>
+</form>
+
+@if (running()) {
+  <div class="progress" role="status">
+    <mat-progress-bar mode="indeterminate" />
+    <p>
+      {{ status() === 'retrieving' ? 'Finding sources' : 'Writing the answer' }}… {{ elapsedSeconds() }} s. A local
+      model on a CPU usually takes one to two minutes. The first question after a break also loads the model, which can
+      add a few more.
+    </p>
+  </div>
+}
+
+@if (question() && status() !== 'idle') {
+  <section class="answer" aria-labelledby="answer-heading">
+    <h2 id="answer-heading">{{ question() }}</h2>
+
+    @if (result(); as done) {
+      @if (done.declined) {
+        <p class="declined">{{ done.answer }}</p>
+      } @else {
+        <p class="text">
+          @for (part of answerParts(); track $index) {
+            <!-- Text sits in a span so template whitespace never lands before a period after a citation. -->
+            @if ('text' in part) {
+              <span>{{ part.text }}</span>
+            } @else {
+              @for (n of part.cites; track n) {
+                @if (source(n); as cited) {
+                  <a
+                    class="cite"
+                    [routerLink]="['/documents', cited.documentId]"
+                    [fragment]="chunkAnchor(cited.chunkId)"
+                    [attr.aria-label]="'Source ' + n + ': ' + path(cited)"
+                    >[{{ n }}]</a
+                  >
+                }
+              }
+            }
+          }
+        </p>
+        @if (!done.grounded) {
+          <p class="warning">This answer cites no sources. Treat it with caution.</p>
+        }
+        @if (done.invalidCitations.length > 0) {
+          <p class="note">
+            Removed citations to sources that were never provided: {{ done.invalidCitations.join(', ') }}.
+          </p>
+        }
+      }
+      <p class="meta">{{ done.model }} · {{ (done.elapsedMs / 1000).toFixed(1) }} s</p>
+    } @else if (streamed()) {
+      <p class="text streaming">{{ streamed() }}</p>
+    }
+
+    @if (status() === 'stopped') {
+      <p class="note">Stopped.</p>
+    }
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+  </section>
+}
+
+@if (sources().length > 0) {
+  <section class="sources" aria-labelledby="sources-heading">
+    <h2 id="sources-heading">Sources</h2>
+    <ol>
+      @for (s of sources(); track s.chunkId) {
+        <li [value]="s.n">
+          <a [routerLink]="['/documents', s.documentId]" [fragment]="chunkAnchor(s.chunkId)">{{ path(s) }}</a
+          >{{ ' ' }}<span class="distance">distance {{ s.vectorDistance.toFixed(2) }}</span>
+        </li>
+      }
+    </ol>
+  </section>
+}

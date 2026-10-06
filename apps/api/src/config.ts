@@ -13,8 +13,11 @@ const Env = z.object({
   OLLAMA_BASE_URL: z.url().default('http://localhost:11434'),
   EMBED_MODEL: z.string().min(1).default('nomic-embed-text'),
   CHAT_MODEL: z.string().min(1).default('qwen2.5:3b'),
-  // Local models on a CPU can take minutes for a long answer.
-  LLM_TIMEOUT_MS: z.coerce.number().int().min(1000).default(180_000),
+  // How long Ollama may go silent before a request is abandoned. Streams reset it on every piece.
+  // On the dev CPU a cold qwen2.5:3b took 2 minutes to load plus 1.5 minutes to read a 1,000-token prompt.
+  LLM_TIMEOUT_MS: z.coerce.number().int().min(1000).default(600_000),
+  // Ollama unloads idle models after 5 minutes by default, and reloading costs minutes on a CPU.
+  OLLAMA_KEEP_ALIVE: z.string().min(1).default('30m'),
   // Questions whose closest chunk is farther than this (cosine distance) are declined without
   // calling the chat model. Measured on nomic-embed-text: answerable 0.11 to 0.25, unanswerable 0.40+.
   ASK_MAX_DISTANCE: z.coerce.number().min(0).max(2).default(0.35),

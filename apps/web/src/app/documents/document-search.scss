@@ -1,0 +1,50 @@
+:host {
+  display: block;
+  margin: 16px 0 24px;
+}
+
+.search {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  mat-form-field {
+    flex: 1;
+  }
+}
+
+mat-progress-bar,
+.message {
+  margin-top: 12px;
+}
+
+.results {
+  margin: 16px 0 0;
+  padding-left: 24px;
+
+  li {
+    margin-bottom: 14px;
+  }
+}
+
+.title {
+  font: var(--mat-sys-title-small);
+}
+
+.kind {
+  margin-left: 8px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--mat-sys-surface-container-high);
+  font: var(--mat-sys-label-small);
+}
+
+.snippet {
+  margin: 4px 0;
+}
+
+.why {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

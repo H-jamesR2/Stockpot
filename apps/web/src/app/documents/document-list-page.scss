@@ -1,0 +1,20 @@
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.intro,
+.sub {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.sub {
+  font: var(--mat-sys-body-small);
+}
+
+mat-progress-bar,
+.message,
+table {
+  margin-top: 16px;
+}

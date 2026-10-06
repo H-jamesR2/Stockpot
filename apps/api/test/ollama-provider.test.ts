@@ -152,3 +152,94 @@ describe('OllamaProvider.chatStream', () => {
     expect(seen?.aborted).toBe(true);
   });
 });
+
+describe('OllamaProvider timeouts', () => {
+  const encoder = new TextEncoder();
+  const line = (content: string) => encoder.encode(`${JSON.stringify({ message: { content }, done: false })}\n`);
+
+  /** A fetch whose response body sends each piece after the given delay, honoring abort like real fetch. */
+  function slowFetch(pieces: { afterMs: number; content: string }[], headersAfterMs = 0) {
+    return (async (_url: string, init: RequestInit) => {
+      const signal = init.signal!;
+      const wait = (ms: number) =>
+        new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(resolve, ms);
+          signal.addEventListener('abort', () => {
+            clearTimeout(timer);
+            reject(signal.reason instanceof Error ? signal.reason : new Error('aborted'));
+          });
+        });
+      await wait(headersAfterMs);
+      return new Response(
+        new ReadableStream({
+          async start(controller) {
+            try {
+              for (const piece of pieces) {
+                await wait(piece.afterMs);
+                controller.enqueue(line(piece.content));
+              }
+              controller.close();
+            } catch (error) {
+              controller.error(error);
+            }
+          },
+        }),
+        { status: 200 },
+      );
+    }) as typeof fetch;
+  }
+
+  function provider(fetchImpl: typeof fetch, timeoutMs: number) {
+    return new OllamaProvider({
+      baseUrl: 'http://ollama.test:11434',
+      embeddingModel: 'nomic-embed-text',
+      chatModel: 'qwen2.5:3b',
+      timeoutMs,
+      fetch: fetchImpl,
+    });
+  }
+
+  async function collect(iterable: AsyncIterable<string>): Promise<string> {
+    let text = '';
+    for await (const piece of iterable) text += piece;
+    return text;
+  }
+
+  it('reports silence as a timeout, not as an unreachable server', async () => {
+    const llm = provider(slowFetch([], 10_000), 50);
+    await expect(collect(llm.chatStream([{ role: 'user', content: 'x' }]))).rejects.toThrow(
+      'Ollama did not respond within 0 s',
+    );
+  });
+
+  it('keeps streaming past the timeout as long as pieces keep arriving', async () => {
+    const pieces = Array.from({ length: 6 }, (_, i) => ({ afterMs: 40, content: `p${i} ` }));
+    const llm = provider(slowFetch(pieces), 100);
+    expect(await collect(llm.chatStream([{ role: 'user', content: 'x' }]))).toBe('p0 p1 p2 p3 p4 p5 ');
+  });
+
+  it('times out when the stream goes quiet mid-answer', async () => {
+    const llm = provider(
+      slowFetch([
+        { afterMs: 10, content: 'Braise ' },
+        { afterMs: 10_000, content: 'never' },
+      ]),
+      80,
+    );
+    await expect(collect(llm.chatStream([{ role: 'user', content: 'x' }]))).rejects.toThrow('did not respond within');
+  });
+
+  it('asks Ollama to keep the model loaded when configured', async () => {
+    const { calls, fetchImpl } = fakeFetch(() => json({ message: { content: 'ok' } }));
+    const llm = new OllamaProvider({
+      baseUrl: 'http://ollama.test:11434',
+      embeddingModel: 'nomic-embed-text',
+      chatModel: 'qwen2.5:3b',
+      timeoutMs: 5_000,
+      keepAlive: '30m',
+      fetch: fetchImpl,
+    });
+    await llm.chat([{ role: 'user', content: 'x' }]);
+    expect(calls[0]?.body).toMatchObject({ keep_alive: '30m' });
+  });
+});
